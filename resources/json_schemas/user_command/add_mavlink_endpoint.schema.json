@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mavlink_hub.app/schemas/user_command/add_mavlink_endpoint.schema.json",
+  "title": "Add Mavlink Endpoint",
+  "description": "Arguments to create a mavlink endpoint",
+  "type": "object",
+  "properties": {
+    "name": {
+      "description": "The name of the mavlink endpoint to be created",
+      "type": "string"
+    },
+    "type": {
+      "description": "The endpoint type to assign to the specified mavlink endpoint",
+      "type": "string"
+    },
+    "config": {
+      "description": "The config to assign to the specificed mavlink endpoint",
+      "type": "object"
+    }
+  },
+  "required": [ "filepath" ]
+}
+

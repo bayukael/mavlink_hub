@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mavlink_hub.app/schemas/user_command/load_plan_from_path.schema.json",
+  "title": "Load Plan From Path",
+  "description": "To load a plan for mavlink_hub by providing a filepath to the plan",
+  "type": "object",
+  "properties": {
+    "filepath": {
+      "description": "The filepath to the plan",
+      "type": "string"
+    }
+  },
+  "required": [ "filepath" ]
+}
+
