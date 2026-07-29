@@ -25,7 +25,7 @@ namespace pendarlab::app::mavlink_hub
   public:
     virtual ~IManager() = default;
     virtual ExecutionResultList executePlan(const UserPlan& plan, const UserPlanPolicy& policy) = 0;
-    virtual OperationResult validatePlan(const UserPlan& plan) = 0;
+    virtual ExecutionResultList validatePlan(const UserPlan& plan) = 0;
     virtual std::vector<std::string> getMavlinkEndpointList() = 0;
     virtual std::optional<MavlinkEndpointState> getMavlinkEndpointState(const std::string& name) = 0;
     virtual std::unordered_map<std::string, MavlinkEndpointState> getMavlinkEndpointStateAll() = 0;

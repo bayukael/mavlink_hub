@@ -56,31 +56,116 @@ namespace pendarlab::app::mavlink_hub
 
   ExecutionResultList Manager::executePlan(const UserPlan& plan, const UserPlanPolicy& policy)
   {
-    // TODO: Code for executing a plan
     ExecutionResultList result;
-    const std::unordered_map<std::string, MavlinkEndpointEntry>& plan_endpoint = plan.endpoint_list;
-    const std::unordered_map<std::string, AgentEntry>& plan_agent = plan.agent_list;
 
-    for(auto& [ep_name, ep_spec] : plan_endpoint){
-      // add an endpoint
-      // If success:
-      //    Check connect_on_create. If true:
-      //      connect the endpoint
-      //    If false:
-      //      Report fail to connect
-      // If failed:
-      //    Report fail to add
-      // If Policy == DISCARD
-      //    
+    const std::unordered_map<std::string, MavlinkEndpointEntry>& plan_endpoint = plan.endpoint_list;
+    for (auto& [ep_name, ep_spec] : plan_endpoint) {
+      OperationResult entry_result;
+
+      OperationResult add_result = addMavlinkEndpoint(ep_name);
+      entry_result.merge(add_result);
+      if (add_result.success) {
+        if (ep_spec.connect_on_create) {
+          OperationResult connect_result = connectMavlinkEndpoint(ep_name, ep_spec.type, ep_spec.config);
+          entry_result.merge(connect_result);
+          if (policy == UserPlanPolicy::DISCARD && connect_result.success == false) {
+            removeMavlinkEndpoint(ep_name);
+          }
+        }
+      }
+      result.endpoint_plan_result[ep_name] = entry_result;
+    }
+
+    const std::unordered_map<std::string, AgentEntry>& plan_agent = plan.agent_list;
+    for (auto& [ag_name, ag_spec] : plan_agent) {
+      OperationResult entry_result;
+
+      OperationResult add_result = addAgent(ag_name, ag_spec.type, ag_spec.config);
+      entry_result.merge(add_result);
+      result.agent_plan_result[ag_name] = entry_result;
     }
 
     return result;
   }
 
-  OperationResult Manager::validatePlan(const UserPlan& plan)
+  ExecutionResultList Manager::validatePlan(const UserPlan& plan)
   {
-    // TODO: Code for validating a plan
-    OperationResult result;
+    ExecutionResultList result;
+
+    const std::unordered_map<std::string, MavlinkEndpointEntry>& plan_endpoint = plan.endpoint_list;
+    for (auto& [ep_name, ep_spec] : plan_endpoint) {
+      OperationResult entry_result;
+
+      OperationResult name_collision_result;
+      auto it = d->endpoint_db.find(ep_name);
+      if (it == d->endpoint_db.end()) {
+        name_collision_result.success = true;
+        name_collision_result.messages.push_back("[Manager]: The name [" + ep_name +
+                                                 "] is AVAILABLE to be used as a Mavlink Endpoint name.");
+      } else {
+        name_collision_result.success = false;
+        name_collision_result.messages.push_back("[Manager]: The name [" + ep_name +
+                                                 "] is NOT AVAILABLE to be used as a Mavlink Endpoint name.");
+      }
+      entry_result.merge(name_collision_result);
+
+      OperationResult config_validation_result;
+      if (d->transport_registry.isRegistered(ep_spec.type)) {
+        auto parse_result = d->agent_registry[ep_spec.type]->parseConfig(ep_spec.config);
+        if (parse_result.ok()) {
+          config_validation_result.success = true;
+          config_validation_result.messages.push_back("[Manager]: The endpoint type [" + ep_spec.type +
+                                                      "] can be used and the given config is VALID.");
+        } else {
+          config_validation_result.success = false;
+          config_validation_result.messages.push_back("Manager]: The endpoint type [" + ep_spec.type +
+                                                      "] can be used HOWEVER the given config is INVALID.");
+        }
+      } else {
+        config_validation_result.success = false;
+        config_validation_result.messages.push_back("[Manager]: The endpoint type [" + ep_spec.type +
+                                                    "] cannot be used because it is not registered.");
+      }
+      entry_result.merge(config_validation_result);
+      result.endpoint_plan_result[ep_name] = entry_result;
+    }
+
+    const std::unordered_map<std::string, AgentEntry>& plan_agent = plan.agent_list;
+    for (auto& [ag_name, ag_spec] : plan_agent) {
+      OperationResult entry_result;
+
+      OperationResult name_collision_result;
+      auto it = d->agents.find(ag_name);
+      if (it == d->agents.end()) {
+        name_collision_result.success = true;
+        name_collision_result.messages.push_back("[Manager]: The name [" + ag_name + "] is AVAILABLE to be used as an Agent name.");
+      } else {
+        name_collision_result.success = false;
+        name_collision_result.messages.push_back("[Manager]: The name [" + ag_name + "] is NOT AVAILABLE to be used as an Agent name.");
+      }
+      entry_result.merge(name_collision_result);
+
+      OperationResult config_validation_result;
+      if (d->agent_registry.isRegistered(ag_spec.type)) {
+        auto parse_result = d->agent_registry[ag_spec.type]->parseConfig(ag_spec.config);
+        if (parse_result.ok()) {
+          config_validation_result.success = true;
+          config_validation_result.messages.push_back("[Manager]: The agent type [" + ag_spec.type +
+                                                      "] can be used and the given config is VALID.");
+        } else {
+          config_validation_result.success = false;
+          config_validation_result.messages.push_back("Manager]: The agent type [" + ag_spec.type +
+                                                      "] can be used HOWEVER the given config is INVALID.");
+        }
+      } else {
+        config_validation_result.success = false;
+        config_validation_result.messages.push_back("[Manager]: The agent type [" + ag_spec.type +
+                                                    "] cannot be used because it is not registered.");
+      }
+      entry_result.merge(config_validation_result);
+      result.agent_plan_result[ag_name] = entry_result;
+    }
+
     return result;
   }
 

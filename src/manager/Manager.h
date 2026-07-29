@@ -33,7 +33,7 @@ namespace pendarlab::app::mavlink_hub
     Manager& operator=(Manager&&) noexcept;
 
     virtual ExecutionResultList executePlan(const UserPlan& plan, const UserPlanPolicy& policy) override;
-    virtual OperationResult validatePlan(const UserPlan& plan) override;
+    virtual ExecutionResultList validatePlan(const UserPlan& plan) override;
     virtual std::vector<std::string> getMavlinkEndpointList() override;
     virtual std::optional<MavlinkEndpointState> getMavlinkEndpointState(const std::string& name) override;
     virtual std::unordered_map<std::string, MavlinkEndpointState> getMavlinkEndpointStateAll() override;
