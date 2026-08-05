@@ -90,28 +90,29 @@ namespace pendarlab::app::mavlink_hub
 
   ExecutionResultList Manager::validatePlan(const UserPlan& plan)
   {
+    // TODO: Add feature to check name collision within the plan itself
     ExecutionResultList result;
 
     const std::unordered_map<std::string, MavlinkEndpointEntry>& plan_endpoint = plan.endpoint_list;
     for (auto& [ep_name, ep_spec] : plan_endpoint) {
       OperationResult entry_result;
 
-      OperationResult name_collision_result;
+      OperationResult name_availability_result;
       auto it = d->endpoint_db.find(ep_name);
       if (it == d->endpoint_db.end()) {
-        name_collision_result.success = true;
-        name_collision_result.messages.push_back("[Manager]: The name [" + ep_name +
-                                                 "] is AVAILABLE to be used as a Mavlink Endpoint name.");
+        name_availability_result.success = true;
+        name_availability_result.messages.push_back("[Manager]: The name [" + ep_name +
+                                                    "] is AVAILABLE to be used as a Mavlink Endpoint name.");
       } else {
-        name_collision_result.success = false;
-        name_collision_result.messages.push_back("[Manager]: The name [" + ep_name +
-                                                 "] is NOT AVAILABLE to be used as a Mavlink Endpoint name.");
+        name_availability_result.success = false;
+        name_availability_result.messages.push_back("[Manager]: The name [" + ep_name +
+                                                    "] is NOT AVAILABLE to be used as a Mavlink Endpoint name.");
       }
-      entry_result.merge(name_collision_result);
+      entry_result.merge(name_availability_result);
 
       OperationResult config_validation_result;
       if (d->transport_registry.isRegistered(ep_spec.type)) {
-        auto parse_result = d->agent_registry[ep_spec.type]->parseConfig(ep_spec.config);
+        auto parse_result = d->transport_registry[ep_spec.type]->parseConfig(ep_spec.config);
         if (parse_result.ok()) {
           config_validation_result.success = true;
           config_validation_result.messages.push_back("[Manager]: The endpoint type [" + ep_spec.type +
