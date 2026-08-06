@@ -4,6 +4,11 @@
 #include <byte_transport/RegistryUserAccess.h>
 #include <gtest/gtest.h>
 #include <manager/Manager.h>
+#include <manager/types/AgentEntry.h>
+#include <manager/types/ExecutionResultList.h>
+#include <manager/types/MavlinkEndpointEntry.h>
+#include <manager/types/UserPlan.h>
+#include <manager/types/UserPlanPolicy.h>
 #include <memory>
 #include <mock_agent/MockAgentDefinition.h>
 #include <mock_byte_transport/MockByteTransportDefinition.h>
@@ -20,6 +25,11 @@ using TransportRegistryUser = pendarlab::lib::comm::byte_transport::RegistryUser
 using AgentRegistry = pendarlab::app::mavlink_hub::AgentRegistry;
 using AgentRegistryUser = pendarlab::app::mavlink_hub::AgentRegistryUserAccess;
 using Manager = pendarlab::app::mavlink_hub::Manager;
+using ExecutionResultList = pendarlab::app::mavlink_hub::ExecutionResultList;
+using AgentEntry = pendarlab::app::mavlink_hub::AgentEntry;
+using EndpointEntry = pendarlab::app::mavlink_hub::MavlinkEndpointEntry;
+using UserPlan = pendarlab::app::mavlink_hub::UserPlan;
+using UserPlanPolicy = pendarlab::app::mavlink_hub::UserPlanPolicy;
 using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
 using AgentState = pendarlab::sdk::mavlink_hub::AgentState;
 
@@ -88,23 +98,38 @@ TEST_F(ManagerInitialTest, AddingEndpointWithSameNameShouldNotWork)
   EXPECT_EQ(manager.getMavlinkEndpointList().size(), 1);
 }
 
-TEST_F(ManagerInitialTest, ValidatingRegisteredEndpointConfigShouldWork)
+TEST_F(ManagerInitialTest, ValidatingRegisteredEndpointWithCorrectConfigShouldWork)
 {
-  std::unordered_map<std::string, std::string> config;
+  std::unordered_map<std::string, std::string> config{
+    {"a_required_string", ""}
+  };
   auto result = manager.validateMavlinkEndpointConfig(g_mock_transport_name, config);
   EXPECT_EQ(result.success, true);
 }
 
-TEST_F(ManagerInitialTest, ValidatingNonRegisteredEndpointConfigShouldWork)
+TEST_F(ManagerInitialTest, ValidatingRegisteredEndpointWithIncorrectConfigShouldReturnFalse)
 {
-  std::unordered_map<std::string, std::string> config;
+  std::unordered_map<std::string, std::string> config{
+    {"incorrect_string", ""}
+  };
+  auto result = manager.validateMavlinkEndpointConfig(g_mock_transport_name, config);
+  EXPECT_EQ(result.success, false);
+}
+
+TEST_F(ManagerInitialTest, ValidatingNonRegisteredEndpointConfigShouldReturnFalse)
+{
+  std::unordered_map<std::string, std::string> config{
+    {"a_required_string", ""}
+  };
   auto result = manager.validateMavlinkEndpointConfig("Non-registered_transport", config);
   EXPECT_EQ(result.success, false);
 }
 
 TEST_F(ManagerInitialTest, AddingAgentWithUniqueNameShouldWork)
 {
-  std::unordered_map<std::string, std::string> config;
+  std::unordered_map<std::string, std::string> config{
+    {"a_required_string", ""}
+  };
   auto result = manager.addAgent("ag1", g_mock_agent_name, config);
   EXPECT_EQ(result.success, true);
   EXPECT_EQ(manager.getAgentList().size(), 1);
@@ -115,7 +140,9 @@ TEST_F(ManagerInitialTest, AddingAgentWithUniqueNameShouldWork)
 
 TEST_F(ManagerInitialTest, AddingAgentWithSameNameShouldNotWork)
 {
-  std::unordered_map<std::string, std::string> config;
+  std::unordered_map<std::string, std::string> config{
+    {"a_required_string", ""}
+  };
   auto result = manager.addAgent("ag1", g_mock_agent_name, config);
   EXPECT_EQ(result.success, true);
   EXPECT_EQ(manager.getAgentList().size(), 1);
@@ -124,16 +151,30 @@ TEST_F(ManagerInitialTest, AddingAgentWithSameNameShouldNotWork)
   EXPECT_EQ(manager.getAgentList().size(), 1);
 }
 
-TEST_F(ManagerInitialTest, ValidatingRegisteredAgentConfigShouldWork)
+TEST_F(ManagerInitialTest, ValidatingRegisteredAgentWithCorrectConfigShouldWork)
 {
-  std::unordered_map<std::string, std::string> config;
+  std::unordered_map<std::string, std::string> config{
+    {"a_required_string", ""}
+  };
   auto result = manager.validateAgentConfig(g_mock_agent_name, config);
   EXPECT_EQ(result.success, true);
 }
 
+TEST_F(ManagerInitialTest, ValidatingRegisteredAgentWithIncorrectConfigShouldReturnFalse)
+{
+  std::unordered_map<std::string, std::string> config{
+    {"incorrect_string", ""}
+  };
+  auto result = manager.validateAgentConfig(g_mock_agent_name, config);
+  EXPECT_EQ(result.success, false);
+}
+
 TEST_F(ManagerInitialTest, ValidatingNonRegisteredAgentConfigShouldWork)
 {
-  std::unordered_map<std::string, std::string> config;
+  std::unordered_map<std::string, std::string> config{
+    {"a_required_string", ""}
+  };
+  ;
   auto result = manager.validateAgentConfig("Non-registered_agent", config);
   EXPECT_EQ(result.success, false);
 }
@@ -185,20 +226,28 @@ TEST_F(EndpointManagementTest, GettingEndpointListShouldBeEqualToAddedEndpoints)
 
 TEST_F(EndpointManagementTest, ConnectingNonExistingEndpointShouldResultFalse)
 {
-  auto result =
-      manager.connectMavlinkEndpoint("non_existing_endpoint", g_mock_transport_name, std::unordered_map<std::string, std::string>());
+  std::unordered_map<std::string, std::string> config{
+    {"a_required_string", ""}
+  };
+  auto result = manager.connectMavlinkEndpoint("non_existing_endpoint", g_mock_transport_name, config);
   EXPECT_EQ(result.success, false);
 }
 
 TEST_F(EndpointManagementTest, ConnectingExistingEndpointShouldResultTrue)
 {
-  auto result = manager.connectMavlinkEndpoint(endpoints_name[0], g_mock_transport_name, std::unordered_map<std::string, std::string>());
+  std::unordered_map<std::string, std::string> config{
+    {"a_required_string", ""}
+  };
+  auto result = manager.connectMavlinkEndpoint(endpoints_name[0], g_mock_transport_name, config);
   EXPECT_EQ(result.success, true);
 }
 
 TEST_F(EndpointManagementTest, ConnectingToUnregisteredTransportShouldResultFalse)
 {
-  auto result = manager.connectMavlinkEndpoint(endpoints_name[0], "non_existing_transport", std::unordered_map<std::string, std::string>());
+  std::unordered_map<std::string, std::string> config{
+    {"a_required_string", ""}
+  };
+  auto result = manager.connectMavlinkEndpoint(endpoints_name[0], "non_existing_transport", config);
   EXPECT_EQ(result.success, false);
 }
 
@@ -281,6 +330,7 @@ protected:
   std::vector<std::string> agents_name{ "ag1", "ag2", "ag3", "ag4" };
   void SetUp() override
   {
+    agent_config["a_required_string"] = "";
     for (size_t i = 0; i < agents_name.size(); i++) {
       manager.addAgent(agents_name[i], g_mock_agent_name, agent_config);
     }
@@ -383,6 +433,342 @@ TEST_F(AgentManagementTest, RemoveANonExistingAgentShouldReturnFalse)
   auto result = manager.removeAgent("non_existing_agent");
   EXPECT_EQ(result.success, false);
 }
+
+// TEST - [ UserPlanValidationTest ]
+// - Given a non-empty manager and a user plan with endpoint and agent name already exists in the manager, validation should report that the
+//   name already exists.
+// - Given a user plan with unregistered type entry, validation should report that the type is not registered.
+// - Given a user plan with registered type but invalid config, validation should report that the config is not valid.
+class UserPlanValidationTest : public testing::Test, public ManagerTestSetup
+{
+protected:
+  std::string existing_ep_name;
+  std::string existing_ag_name;
+  void SetUp() override
+  {
+    existing_ag_name = "existing_ag_name";
+    existing_ep_name = "existing_ep_name";
+    manager.addMavlinkEndpoint(existing_ep_name);
+    manager.addAgent(existing_ag_name, g_mock_agent_name,
+                     {
+                         {"a_required_string", ""}
+    });
+  }
+  void TearDown() override {}
+};
+
+TEST_F(UserPlanValidationTest, IfEndpointNameAlreadyExistsValidationShouldReportFalse)
+{
+  UserPlan plan;
+
+  EndpointEntry ep_entry;
+  ep_entry.type = g_mock_transport_name;
+  ep_entry.config["a_required_string"] = "";
+  plan.endpoint_list.emplace(existing_ep_name, ep_entry);
+
+  ExecutionResultList result = manager.validatePlan(plan);
+  ASSERT_NE(result.endpoint_plan_result.find(existing_ep_name), result.endpoint_plan_result.end());
+  EXPECT_EQ(result.endpoint_plan_result[existing_ep_name].success, false);
+}
+
+TEST_F(UserPlanValidationTest, IfAgentNameAlreadyExistsValidationShouldReportFalse)
+{
+  UserPlan plan;
+
+  AgentEntry ag_entry;
+  ag_entry.type = g_mock_agent_name;
+  ag_entry.config["a_required_string"] = "";
+  plan.agent_list.emplace(existing_ag_name, ag_entry);
+
+  ExecutionResultList result = manager.validatePlan(plan);
+  ASSERT_NE(result.agent_plan_result.find(existing_ag_name), result.agent_plan_result.end());
+  EXPECT_EQ(result.agent_plan_result[existing_ag_name].success, false);
+}
+
+TEST_F(UserPlanValidationTest, IfEndpointTypeIsNotRegisteredValidationShouldReportFalse)
+{
+  UserPlan plan;
+
+  EndpointEntry ep_entry;
+  std::string plan_ep_name("ep1");
+  ep_entry.type = "unregistered_type";
+  ep_entry.config["a_required_string"] = "";
+  plan.endpoint_list.emplace(plan_ep_name, ep_entry);
+
+  ExecutionResultList result = manager.validatePlan(plan);
+  EXPECT_EQ(result.endpoint_plan_result[plan_ep_name].success, false);
+}
+
+TEST_F(UserPlanValidationTest, IfAgentTypeIsNotRegisteredValidationShouldReportFalse)
+{
+  UserPlan plan;
+
+  AgentEntry ag_entry;
+  std::string plan_ag_name("ag1");
+  ag_entry.type = "unregistered_type";
+  ag_entry.config["a_required_string"] = "";
+  plan.agent_list.emplace(plan_ag_name, ag_entry);
+
+  ExecutionResultList result = manager.validatePlan(plan);
+  EXPECT_EQ(result.agent_plan_result[plan_ag_name].success, false);
+}
+
+class UserPlanSetup
+{
+protected:
+  UserPlan plan;
+  std::vector<std::string> ep_name_list;
+  std::vector<std::string> ag_name_list;
+  UserPlanSetup();
+};
+
+UserPlanSetup::UserPlanSetup()
+{
+  ep_name_list = { "ep1", "ep2", "ep3", "ep4" };
+  ag_name_list = { "ag1", "ag2", "ag3", "ag4" };
+
+  AgentEntry ag_entry;
+  ag_entry.type = g_mock_agent_name;
+  ag_entry.config["a_required_string"] = "";
+  EndpointEntry ep_entry;
+  ep_entry.type = g_mock_transport_name;
+  ep_entry.config["a_required_string"] = "";
+  ep_entry.connect_on_create = false;
+
+  for (auto& ag_name : ag_name_list) {
+    plan.agent_list.emplace(ag_name, ag_entry);
+  }
+  for (auto& ep_name : ep_name_list) {
+    plan.endpoint_list.emplace(ep_name, ep_entry);
+  }
+}
+// TEST - [ UserPlanExecutionWithEmptyManagerTest ]
+// - Given an empty manager and a user plan with all valid entries, all entries should be registered into the manager
+// - Given an empty manager and a user plan with some valid entries with BEST_EFFORT policy, all valid entries should be registered into the
+//   manager and the invalid entries should not be registered into the manager
+// - Given an empty manager and a user plan with some valid entries with DISCARD policy, all entries should not be registered into the
+//   manager.
+class UserPlanExecutionWithEmptyManagerTest : public testing::Test, public ManagerTestSetup, public UserPlanSetup
+{
+protected:
+  void SetUp() override {}
+  void TearDown() override {}
+};
+
+TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingBestEffortPolicyValidUserPlanShouldSucceed)
+{
+  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::BEST_EFFORT);
+
+  // Check if names in the plan are registered
+  for (auto& ag_name : ag_name_list) {
+    auto it = result.agent_plan_result.find(ag_name);
+    ASSERT_NE(it, result.agent_plan_result.end());
+    EXPECT_EQ(it->second.success, true);
+  }
+  for (auto& ep_name : ep_name_list) {
+    auto it = result.endpoint_plan_result.find(ep_name);
+    ASSERT_NE(it, result.endpoint_plan_result.end());
+    EXPECT_EQ(it->second.success, true);
+  }
+
+  // Check if the registered entries contain only the names in the plan
+  for (auto& [ag_name, ag_result] : result.agent_plan_result) {
+    bool found = false;
+    for (auto& ag_name_plan : ag_name_list) {
+      if (ag_name == ag_name_plan) {
+        found = true;
+        break;
+      }
+    }
+    EXPECT_EQ(found, true);
+  }
+  for (auto& [ep_name, ep_result] : result.endpoint_plan_result) {
+    bool found = false;
+    for (auto& ep_name_plan : ep_name_list) {
+      if (ep_name == ep_name_plan) {
+        found = true;
+        break;
+      }
+    }
+    EXPECT_EQ(found, true);
+  }
+}
+
+TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingDiscardPolicyValidUserPlanShouldSucceed)
+{
+  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::DISCARD);
+
+  for (auto& ag_name : ag_name_list) {
+    auto it = result.agent_plan_result.find(ag_name);
+    ASSERT_NE(it, result.agent_plan_result.end());
+    EXPECT_EQ(it->second.success, true);
+  }
+  for (auto& ep_name : ep_name_list) {
+    auto it = result.endpoint_plan_result.find(ep_name);
+    ASSERT_NE(it, result.endpoint_plan_result.end());
+    EXPECT_EQ(it->second.success, true);
+  }
+}
+
+TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingBestEffortPolicyValidUserPlanShouldRegisterValidEntriesOnly)
+{
+  plan.agent_list[ag_name_list[0]].type = "unregistered_type";
+  plan.agent_list[ag_name_list[1]].config.erase("a_required_string");
+  plan.endpoint_list[ep_name_list[2]].type = "unregistered_type";
+  plan.endpoint_list[ep_name_list[3]].config.erase("a_required_string");
+  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::BEST_EFFORT);
+
+  for (auto& ag_name : ag_name_list) {
+    auto it = result.agent_plan_result.find(ag_name);
+    ASSERT_NE(it, result.agent_plan_result.end());
+    if (ag_name == ag_name_list[0] || ag_name == ag_name_list[1]) {
+      EXPECT_EQ(it->second.success, false);
+
+    } else {
+      EXPECT_EQ(it->second.success, true);
+    }
+  }
+  for (auto& ep_name : ep_name_list) {
+    auto it = result.endpoint_plan_result.find(ep_name);
+    ASSERT_NE(it, result.endpoint_plan_result.end());
+    if (ep_name == ep_name_list[2] || ep_name == ep_name_list[3]) {
+      EXPECT_EQ(it->second.success, false);
+
+    } else {
+      EXPECT_EQ(it->second.success, true);
+    }
+  }
+
+  EXPECT_EQ(manager.getAgentList().size(), 2);
+  EXPECT_EQ(manager.getMavlinkEndpointList().size(), 2);
+}
+
+TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingDiscardPolicyValidUserPlanShouldNotRegisterAnything)
+{
+  plan.agent_list[ag_name_list[0]].type = "unregistered_type";
+  plan.agent_list[ag_name_list[1]].config.erase("a_required_string");
+  plan.endpoint_list[ep_name_list[2]].type = "unregistered_type";
+  plan.endpoint_list[ep_name_list[3]].config.erase("a_required_string");
+  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::DISCARD);
+
+  for (auto& ag_name : ag_name_list) {
+    auto it = result.agent_plan_result.find(ag_name);
+    ASSERT_NE(it, result.agent_plan_result.end());
+    EXPECT_EQ(it->second.success, false);
+  }
+  for (auto& ep_name : ep_name_list) {
+    auto it = result.endpoint_plan_result.find(ep_name);
+    ASSERT_NE(it, result.endpoint_plan_result.end());
+    EXPECT_EQ(it->second.success, false);
+  }
+
+  EXPECT_EQ(manager.getAgentList().size(), 0);
+  EXPECT_EQ(manager.getMavlinkEndpointList().size(), 0);
+}
+
+// TEST - [ UserPlanExecutionWithNonEmptyManagerTest ]
+// - Given a non-empty manager and a user plan with all valid entries, all entries should be registered into the manager
+// - given a non-empty manager and a user plan with all valid entries but has name collision with existing entries with BEST_EFFORT policy,
+//   existing entries will not be removed, non-colliding entries should be added into the manager, and new entries that have name collision
+//   will not be added.
+// - Given a non-empty manager and a BEST_EFFORT user plan with invalid entries and name collision to existing entries, existing entries
+//   will be kept and no new entries are added into the manager.
+// - Given a non-empty manager and a DISCARD user plan with invalid entries and name collision to existing entries, existing entries will be
+//   kept and no new entries are added into the manager.
+
+class UserPlanExecutionWithNonEmptyManagerTest : public testing::Test, public ManagerTestSetup, public UserPlanSetup
+{
+protected:
+  std::vector<std::string> manager_init_ep_list{"m_ep1", "m_ep2", "m_ep3", "m_ep4"};
+  std::vector<std::string> manager_init_ag_list{"m_ag1", "m_ag2", "m_ag3", "m_ag4"};
+  void SetUp() override {
+    for(auto& name : manager_init_ep_list){
+      manager.addMavlinkEndpoint(name);
+    }
+    for(auto& name : manager_init_ag_list){
+      manager.addAgent(name, g_mock_agent_name, {{"a_required_string", ""}});
+    }
+  }
+  void TearDown() override {}
+};
+
+TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingBestEffortPolicyValidUserPlanShouldRegisterAllEntries)
+{
+  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::BEST_EFFORT);
+  // Check if names in the plan are registered
+  for (auto& ag_name : ag_name_list) {
+    auto it = result.agent_plan_result.find(ag_name);
+    ASSERT_NE(it, result.agent_plan_result.end());
+    EXPECT_EQ(it->second.success, true);
+  }
+  for (auto& ep_name : ep_name_list) {
+    auto it = result.endpoint_plan_result.find(ep_name);
+    ASSERT_NE(it, result.endpoint_plan_result.end());
+    EXPECT_EQ(it->second.success, true);
+  }
+}
+
+TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingDiscardPolicyValidUserPlanShouldRegisterAllEntries)
+{
+  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::DISCARD);
+  // Check if names in the plan are registered
+  for (auto& ag_name : ag_name_list) {
+    auto it = result.agent_plan_result.find(ag_name);
+    ASSERT_NE(it, result.agent_plan_result.end());
+    EXPECT_EQ(it->second.success, true);
+  }
+  for (auto& ep_name : ep_name_list) {
+    auto it = result.endpoint_plan_result.find(ep_name);
+    ASSERT_NE(it, result.endpoint_plan_result.end());
+    EXPECT_EQ(it->second.success, true);
+  }
+}
+
+TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingBestEffortPolicyWithSomeInvalidUserPlanShouldRegisterValidEntriesOnly)
+{
+  plan.endpoint_list["m_ep1"] = plan.endpoint_list[ep_name_list[2]];
+  plan.endpoint_list.erase(ep_name_list[2]);
+  ep_name_list[2] = "m_ep1";
+  plan.endpoint_list[ep_name_list[3]].config.erase("a_required_string");
+  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::BEST_EFFORT);
+  // Check if names in the plan are registered
+  for (auto& ag_name : ag_name_list) {
+    auto it = result.agent_plan_result.find(ag_name);
+    ASSERT_NE(it, result.agent_plan_result.end());
+    EXPECT_EQ(it->second.success, true);
+  }
+  for (auto& ep_name : ep_name_list) {
+    auto it = result.endpoint_plan_result.find(ep_name);
+    ASSERT_NE(it, result.endpoint_plan_result.end());
+    if (ep_name == ep_name_list[2] || ep_name == ep_name_list[3]) {
+      EXPECT_EQ(it->second.success, false);
+
+    } else {
+      EXPECT_EQ(it->second.success, true);
+    }
+  }
+}
+
+TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingDiscardPolicyWithSomeInvalidUserPlanShouldNotRegisterAnything)
+{
+  plan.endpoint_list["m_ep1"] = plan.endpoint_list[ep_name_list[2]];
+  plan.endpoint_list.erase(ep_name_list[2]);
+  ep_name_list[2] = "m_ep1";
+  plan.endpoint_list[ep_name_list[3]].config.erase("a_required_string");
+  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::DISCARD);
+  // Check if names in the plan are registered
+  for (auto& ag_name : ag_name_list) {
+    auto it = result.agent_plan_result.find(ag_name);
+    ASSERT_NE(it, result.agent_plan_result.end());
+    EXPECT_EQ(it->second.success, false);
+  }
+  for (auto& ep_name : ep_name_list) {
+    auto it = result.endpoint_plan_result.find(ep_name);
+    ASSERT_NE(it, result.endpoint_plan_result.end());
+    EXPECT_EQ(it->second.success, false);
+  }
+}
+
 
 int main(int argc, char* argv[])
 {

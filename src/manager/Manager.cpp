@@ -58,31 +58,72 @@ namespace pendarlab::app::mavlink_hub
   {
     ExecutionResultList result;
 
+    ExecutionResultList validation_result = validatePlan(plan);
+    bool discard_plan = false;
+
+    // Checking if we need to discard the plan based on endpoint list
+    for (auto& [name, spec] : plan.endpoint_list) {
+      OperationResult validity = validation_result.endpoint_plan_result[name];
+      if (policy == UserPlanPolicy::DISCARD) {
+        if ((!validity.success)) {
+          discard_plan = true;
+          break;
+        }
+      }
+    }
+    // Checking if we need to discard the plan based on agent list
+    for (auto& [name, spec] : plan.agent_list) {
+      OperationResult validity = validation_result.agent_plan_result[name];
+      if (policy == UserPlanPolicy::DISCARD) {
+        if ((!validity.success)) {
+          discard_plan = true;
+          break;
+        }
+      }
+    }
+
+    // Executing the endpoint plan based on the validation result
     const std::unordered_map<std::string, MavlinkEndpointEntry>& plan_endpoint = plan.endpoint_list;
     for (auto& [ep_name, ep_spec] : plan_endpoint) {
-      OperationResult entry_result;
-
-      OperationResult add_result = addMavlinkEndpoint(ep_name);
-      entry_result.merge(add_result);
-      if (add_result.success) {
-        if (ep_spec.connect_on_create) {
-          OperationResult connect_result = connectMavlinkEndpoint(ep_name, ep_spec.type, ep_spec.config);
-          entry_result.merge(connect_result);
-          if (policy == UserPlanPolicy::DISCARD && connect_result.success == false) {
-            removeMavlinkEndpoint(ep_name);
+      const OperationResult& validity = validation_result.endpoint_plan_result[ep_name];
+      OperationResult exec_result;
+      if (!validity.success) {
+        exec_result = validation_result.endpoint_plan_result[ep_name];
+      } else {
+        if (discard_plan) { // If the plan has to be discarded
+          exec_result.success = false;
+          exec_result.messages.push_back("[Manager]: Endpoint [" + ep_name + "] is discarded because of the policy");
+        } else {
+          OperationResult add_result = addMavlinkEndpoint(ep_name);
+          exec_result.merge(add_result);
+          if (add_result.success && ep_spec.connect_on_create) {
+            OperationResult connect_result = connectMavlinkEndpoint(ep_name, ep_spec.type, ep_spec.config);
+            exec_result.merge(connect_result);
           }
         }
       }
-      result.endpoint_plan_result[ep_name] = entry_result;
+      result.endpoint_plan_result[ep_name] = exec_result;
     }
 
+    // Executing the agent plan based on the validation result
     const std::unordered_map<std::string, AgentEntry>& plan_agent = plan.agent_list;
     for (auto& [ag_name, ag_spec] : plan_agent) {
-      OperationResult entry_result;
-
-      OperationResult add_result = addAgent(ag_name, ag_spec.type, ag_spec.config);
-      entry_result.merge(add_result);
-      result.agent_plan_result[ag_name] = entry_result;
+      const OperationResult& validity = validation_result.agent_plan_result[ag_name];
+      OperationResult exec_result;
+      if (!validity.success) {
+        exec_result = validation_result.agent_plan_result[ag_name];
+      } else {
+        if (discard_plan) {
+          OperationResult discard_report;
+          discard_report.success = false;
+          discard_report.messages.push_back("[Manager]: Agent [" + ag_name + "] is valid but the plan is discarded because of the policy");
+          exec_result.merge(discard_report);
+        } else {
+          OperationResult add_result = addAgent(ag_name, ag_spec.type, ag_spec.config);
+          exec_result.merge(add_result);
+        }
+      }
+      result.agent_plan_result[ag_name] = exec_result;
     }
 
     return result;
@@ -116,16 +157,15 @@ namespace pendarlab::app::mavlink_hub
         if (parse_result.ok()) {
           config_validation_result.success = true;
           config_validation_result.messages.push_back("[Manager]: The endpoint type [" + ep_spec.type +
-                                                      "] can be used and the given config is VALID.");
+                                                      "] is registered and the given config is VALID.");
         } else {
           config_validation_result.success = false;
           config_validation_result.messages.push_back("Manager]: The endpoint type [" + ep_spec.type +
-                                                      "] can be used HOWEVER the given config is INVALID.");
+                                                      "] is registered HOWEVER the given config is INVALID.");
         }
       } else {
         config_validation_result.success = false;
-        config_validation_result.messages.push_back("[Manager]: The endpoint type [" + ep_spec.type +
-                                                    "] cannot be used because it is not registered.");
+        config_validation_result.messages.push_back("[Manager]: The endpoint type [" + ep_spec.type + "] is not registered.");
       }
       entry_result.merge(config_validation_result);
       result.endpoint_plan_result[ep_name] = entry_result;
@@ -152,16 +192,15 @@ namespace pendarlab::app::mavlink_hub
         if (parse_result.ok()) {
           config_validation_result.success = true;
           config_validation_result.messages.push_back("[Manager]: The agent type [" + ag_spec.type +
-                                                      "] can be used and the given config is VALID.");
+                                                      "] is registered and the given config is VALID.");
         } else {
           config_validation_result.success = false;
           config_validation_result.messages.push_back("Manager]: The agent type [" + ag_spec.type +
-                                                      "] can be used HOWEVER the given config is INVALID.");
+                                                      "] is registered HOWEVER the given config is INVALID.");
         }
       } else {
         config_validation_result.success = false;
-        config_validation_result.messages.push_back("[Manager]: The agent type [" + ag_spec.type +
-                                                    "] cannot be used because it is not registered.");
+        config_validation_result.messages.push_back("[Manager]: The agent type [" + ag_spec.type + "] is not registered.");
       }
       entry_result.merge(config_validation_result);
       result.agent_plan_result[ag_name] = entry_result;
