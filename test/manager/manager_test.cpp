@@ -4,6 +4,7 @@
 #include <byte_transport/RegistryUserAccess.h>
 #include <gtest/gtest.h>
 #include <manager/Manager.h>
+#include <manager/ManagerResourceRequester.h>
 #include <manager/types/AgentEntry.h>
 #include <manager/types/ExecutionResultList.h>
 #include <manager/types/MavlinkEndpointEntry.h>
@@ -32,6 +33,8 @@ using UserPlan = pendarlab::app::mavlink_hub::UserPlan;
 using UserPlanPolicy = pendarlab::app::mavlink_hub::UserPlanPolicy;
 using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
 using AgentState = pendarlab::sdk::mavlink_hub::AgentState;
+using ManagerResourceRequester = pendarlab::app::mavlink_hub::ManagerResourceRequester;
+using IMavlinkEndpointUser = pendarlab::sdk::mavlink_hub::IMavlinkEndpointUser;
 
 class ManagerTestSetup
 {
@@ -679,14 +682,18 @@ TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingDiscardPolicyValidUserPla
 class UserPlanExecutionWithNonEmptyManagerTest : public testing::Test, public ManagerTestSetup, public UserPlanSetup
 {
 protected:
-  std::vector<std::string> manager_init_ep_list{"m_ep1", "m_ep2", "m_ep3", "m_ep4"};
-  std::vector<std::string> manager_init_ag_list{"m_ag1", "m_ag2", "m_ag3", "m_ag4"};
-  void SetUp() override {
-    for(auto& name : manager_init_ep_list){
+  std::vector<std::string> manager_init_ep_list{ "m_ep1", "m_ep2", "m_ep3", "m_ep4" };
+  std::vector<std::string> manager_init_ag_list{ "m_ag1", "m_ag2", "m_ag3", "m_ag4" };
+  void SetUp() override
+  {
+    for (auto& name : manager_init_ep_list) {
       manager.addMavlinkEndpoint(name);
     }
-    for(auto& name : manager_init_ag_list){
-      manager.addAgent(name, g_mock_agent_name, {{"a_required_string", ""}});
+    for (auto& name : manager_init_ag_list) {
+      manager.addAgent(name, g_mock_agent_name,
+                       {
+                           {"a_required_string", ""}
+      });
     }
   }
   void TearDown() override {}
@@ -769,6 +776,123 @@ TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingDiscardPolicyWithSomeI
   }
 }
 
+class MavlinkEndpointUserManagementTest : public testing::Test, public ManagerTestSetup{
+protected:
+std::string requester_name = "the_requester";
+std::string endpoint_name = "the_endpoint";
+  void SetUp() override {
+    manager.addMavlinkEndpoint(endpoint_name);
+  }
+  void TearDown() override {}
+};
+
+TEST_F(MavlinkEndpointUserManagementTest, CreatingEndpointUserShouldIncreaseUserCount){
+  std::unique_ptr<IMavlinkEndpointUser> ep_user1 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 1);
+  std::unique_ptr<IMavlinkEndpointUser> ep_user2 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 2);
+}
+
+TEST_F(MavlinkEndpointUserManagementTest, RemovingEndpointUserShouldDecreaseUserCount){
+  std::unique_ptr<IMavlinkEndpointUser> ep_user1 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
+  std::unique_ptr<IMavlinkEndpointUser> ep_user2 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
+  std::unique_ptr<IMavlinkEndpointUser> ep_user3 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 3);
+  manager.removeMavlinkEndpointUser(endpoint_name, requester_name);
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 2);
+  manager.removeMavlinkEndpointUser(endpoint_name, requester_name);
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 1);
+  manager.removeMavlinkEndpointUser(endpoint_name, requester_name);
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 0);
+}
+
+TEST_F(MavlinkEndpointUserManagementTest, DeletingEndpointUserShouldDecreaseUserCount){
+  std::unique_ptr<IMavlinkEndpointUser> ep_user1 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
+  std::unique_ptr<IMavlinkEndpointUser> ep_user2 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
+  std::unique_ptr<IMavlinkEndpointUser> ep_user3 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 3);
+  ep_user1.reset();
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 2);
+  ep_user2.reset();
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 1);
+  ep_user3.reset();
+  EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 0);
+}
+
+// TEST - [ ManagerResourceRequesterTest ]
+// - Given a manager already containing endpoints:
+//   - createMavlinkEndpointUser through requestMavlinkEndpoint should not be null if endpoint_name exists within the manager
+//   - createMavlinkEndpointUser through requestMavlinkEndpoint should be null if endpoint_name does not exist within the manager
+// - Given a manager already containing endpoints:
+//   - getMavlinkEndpointUserList should return the correct number of users.
+class ManagerResourceRequesterTest : public testing::Test, public ManagerTestSetup
+{
+protected:
+  std::vector<std::string> ep_name_list{ "m_ep1", "m_ep2", "m_ep3", "m_ep4" };
+  std::vector<std::string> requester_names{ "requester1", "requester2", "requester3", "requester4" };
+  std::vector<ManagerResourceRequester> requesters;
+  void SetUp() override
+  {
+    // add endpoints
+    for (auto& name : ep_name_list) {
+      manager.addMavlinkEndpoint(name);
+    }
+
+    // add ManagerResourceRequesters
+    for (auto& name : requester_names) {
+      requesters.push_back(ManagerResourceRequester(name, &manager));
+    }
+  }
+  void TearDown() override {}
+};
+
+TEST_F(ManagerResourceRequesterTest, InitialUserShouldBeZeroForEachEndpoints)
+{
+  for (auto& name : ep_name_list) {
+    auto result = manager.getMavlinkEndpointUserList(name);
+    ASSERT_NE(result, std::nullopt);
+    EXPECT_EQ(result.value().size(), 0);
+  }
+}
+
+TEST_F(ManagerResourceRequesterTest, RequestMavlinkEndpointShouldNotBeNullIfEndpointExists)
+{
+  std::unique_ptr<IMavlinkEndpointUser> ep = requesters[0].requestMavlinkEndpoint(ep_name_list[0]);
+  EXPECT_NE(ep, nullptr);
+}
+
+TEST_F(ManagerResourceRequesterTest, RequestMavlinkEndpointShouldBeNullIfEndpointDoesNotExist)
+{
+  std::unique_ptr<IMavlinkEndpointUser> ep = requesters[0].requestMavlinkEndpoint("not_existing_endpoint");
+  EXPECT_EQ(ep, nullptr);
+}
+
+TEST_F(ManagerResourceRequesterTest, GettingNumberOfMavlinkEndpointUserFromANonExistingEndpointShouldNullopt)
+{
+  auto result = manager.getMavlinkEndpointUserList("not_existing_endpoint");
+  EXPECT_EQ(result, std::nullopt);
+}
+
+
+
+TEST_F(ManagerResourceRequesterTest, GettingNumberOfMavlinkEndpointUserShouldGiveTheCorrectNumber)
+{
+  std::unique_ptr<IMavlinkEndpointUser> ep1 = requesters[0].requestMavlinkEndpoint(ep_name_list[0]);
+  auto user_list_optional = manager.getMavlinkEndpointUserList(ep_name_list[0]);
+  auto user_list = user_list_optional.value();
+  EXPECT_EQ(user_list[requesters[0].getName()], 1);
+  std::unique_ptr<IMavlinkEndpointUser> ep2 = requesters[0].requestMavlinkEndpoint(ep_name_list[0]);
+  user_list = manager.getMavlinkEndpointUserList(ep_name_list[0]).value();
+  EXPECT_EQ(user_list[requesters[0].getName()], 2);
+  ep1.reset();
+  user_list = manager.getMavlinkEndpointUserList(ep_name_list[0]).value();
+  EXPECT_EQ(user_list[requesters[0].getName()], 1);
+  ep1 = requesters[1].requestMavlinkEndpoint(ep_name_list[0]);
+  user_list = manager.getMavlinkEndpointUserList(ep_name_list[0]).value();
+  EXPECT_EQ(user_list.size(), 2);
+  EXPECT_EQ(user_list[requesters[0].getName()], 1);
+  EXPECT_EQ(user_list[requesters[1].getName()], 1);
+}
 
 int main(int argc, char* argv[])
 {

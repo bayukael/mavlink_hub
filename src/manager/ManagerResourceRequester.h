@@ -20,6 +20,7 @@ namespace pendarlab::app::mavlink_hub
     ManagerResourceRequester& operator=(ManagerResourceRequester&&) noexcept;
 
     virtual std::unique_ptr<IMavlinkEndpointUser> requestMavlinkEndpoint(const std::string& ep_name) override;
+    std::string getName();
 
   private:
     struct ManagerResourceRequesterImpl;

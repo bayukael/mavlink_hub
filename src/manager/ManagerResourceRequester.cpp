@@ -34,4 +34,9 @@ namespace pendarlab::app::mavlink_hub
   {
     return d->manager->createMavlinkEndpointUser(ep_name, d->name);
   }
+
+  std::string ManagerResourceRequester::getName(){
+    return d->name;
+  }
+
 } // namespace pendarlab::app::mavlink_hub
