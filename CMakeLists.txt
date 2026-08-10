@@ -263,6 +263,4 @@ target_compile_options(MavlinkHubLibLoaderTest
 )
 target_link_libraries(MavlinkHubLibLoaderTest
   PRIVATE gtest
-  PRIVATE MavlinkHubMockAgent
-  PRIVATE MavlinkHubMockByteTransport
 )
