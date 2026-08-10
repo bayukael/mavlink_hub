@@ -247,3 +247,22 @@ target_link_libraries(MavlinkHubManagerTest
   PRIVATE MavlinkHubMockAgent
   PRIVATE MavlinkHubMockByteTransport
 )
+
+##############################################################################
+############################     Manager Test    #############################
+##############################################################################
+add_executable(MavlinkHubLibLoaderTest
+  test/lib_loader/lib_loader_test.cpp
+)
+target_include_directories(MavlinkHubLibLoaderTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+    $<BUILD_INTERFACE:${MAVLINK_HEADER_DIR}/include>
+)
+target_compile_options(MavlinkHubLibLoaderTest
+  PRIVATE -Wno-address-of-packed-member
+)
+target_link_libraries(MavlinkHubLibLoaderTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubMockAgent
+  PRIVATE MavlinkHubMockByteTransport
+)
