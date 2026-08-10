@@ -15,7 +15,15 @@ namespace pendarlab::app::mavlink_hub::test
   AgentConfigParseResult MockAgentDefinition::parseConfig(const std::unordered_map<std::string, std::string>& cfg) const
   {
     AgentConfigParseResult result;
-    result.parsed = AgentConfig();
+    std::string required_entry("a_required_string");
+    auto it = cfg.find(required_entry);
+    if (it == cfg.end()) {
+      result.parsed = std::nullopt;
+      result.messages.push_back("[MockAgent] : a required entry is missing: " + required_entry);
+    } else {
+      result.parsed = AgentConfig();
+    }
+    
     return result;
   }
 

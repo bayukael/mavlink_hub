@@ -56,31 +56,156 @@ namespace pendarlab::app::mavlink_hub
 
   ExecutionResultList Manager::executePlan(const UserPlan& plan, const UserPlanPolicy& policy)
   {
-    // TODO: Code for executing a plan
     ExecutionResultList result;
-    const std::unordered_map<std::string, MavlinkEndpointEntry>& plan_endpoint = plan.endpoint_list;
-    const std::unordered_map<std::string, AgentEntry>& plan_agent = plan.agent_list;
 
-    for(auto& [ep_name, ep_spec] : plan_endpoint){
-      // add an endpoint
-      // If success:
-      //    Check connect_on_create. If true:
-      //      connect the endpoint
-      //    If false:
-      //      Report fail to connect
-      // If failed:
-      //    Report fail to add
-      // If Policy == DISCARD
-      //    
+    ExecutionResultList validation_result = validatePlan(plan);
+    bool discard_plan = false;
+
+    // Checking if we need to discard the plan based on endpoint list
+    for (auto& [name, spec] : plan.endpoint_list) {
+      OperationResult validity = validation_result.endpoint_plan_result[name];
+      if (policy == UserPlanPolicy::DISCARD) {
+        if ((!validity.success)) {
+          discard_plan = true;
+          break;
+        }
+      }
+    }
+    // Checking if we need to discard the plan based on agent list
+    for (auto& [name, spec] : plan.agent_list) {
+      OperationResult validity = validation_result.agent_plan_result[name];
+      if (policy == UserPlanPolicy::DISCARD) {
+        if ((!validity.success)) {
+          discard_plan = true;
+          break;
+        }
+      }
+    }
+
+    // Executing the endpoint plan based on the validation result
+    const std::unordered_map<std::string, MavlinkEndpointEntry>& plan_endpoint = plan.endpoint_list;
+    for (auto& [ep_name, ep_spec] : plan_endpoint) {
+      const OperationResult& validity = validation_result.endpoint_plan_result[ep_name];
+      OperationResult exec_result;
+      if (!validity.success) {
+        exec_result = validation_result.endpoint_plan_result[ep_name];
+      } else {
+        if (discard_plan) { // If the plan has to be discarded
+          exec_result.success = false;
+          exec_result.messages.push_back("[Manager]: Endpoint [" + ep_name + "] is discarded because of the policy");
+        } else {
+          OperationResult add_result = addMavlinkEndpoint(ep_name);
+          exec_result.merge(add_result);
+          if (add_result.success && ep_spec.connect_on_create) {
+            OperationResult connect_result = connectMavlinkEndpoint(ep_name, ep_spec.type, ep_spec.config);
+            exec_result.merge(connect_result);
+          }
+        }
+      }
+      result.endpoint_plan_result[ep_name] = exec_result;
+    }
+
+    // Executing the agent plan based on the validation result
+    const std::unordered_map<std::string, AgentEntry>& plan_agent = plan.agent_list;
+    for (auto& [ag_name, ag_spec] : plan_agent) {
+      const OperationResult& validity = validation_result.agent_plan_result[ag_name];
+      OperationResult exec_result;
+      if (!validity.success) {
+        exec_result = validation_result.agent_plan_result[ag_name];
+      } else {
+        if (discard_plan) {
+          OperationResult discard_report;
+          discard_report.success = false;
+          discard_report.messages.push_back("[Manager]: Agent [" + ag_name + "] is valid but the plan is discarded because of the policy");
+          exec_result.merge(discard_report);
+        } else {
+          OperationResult add_result = addAgent(ag_name, ag_spec.type, ag_spec.config);
+          exec_result.merge(add_result);
+        }
+      }
+      result.agent_plan_result[ag_name] = exec_result;
     }
 
     return result;
   }
 
-  OperationResult Manager::validatePlan(const UserPlan& plan)
+  ExecutionResultList Manager::validatePlan(const UserPlan& plan)
   {
-    // TODO: Code for validating a plan
-    OperationResult result;
+    // TODO: Add feature to check name collision within the plan itself
+    ExecutionResultList result;
+
+    const std::unordered_map<std::string, MavlinkEndpointEntry>& plan_endpoint = plan.endpoint_list;
+    for (auto& [ep_name, ep_spec] : plan_endpoint) {
+      OperationResult entry_result;
+
+      OperationResult name_availability_result;
+      auto it = d->endpoint_db.find(ep_name);
+      if (it == d->endpoint_db.end()) {
+        name_availability_result.success = true;
+        name_availability_result.messages.push_back("[Manager]: The name [" + ep_name +
+                                                    "] is AVAILABLE to be used as a Mavlink Endpoint name.");
+      } else {
+        name_availability_result.success = false;
+        name_availability_result.messages.push_back("[Manager]: The name [" + ep_name +
+                                                    "] is NOT AVAILABLE to be used as a Mavlink Endpoint name.");
+      }
+      entry_result.merge(name_availability_result);
+
+      OperationResult config_validation_result;
+      if (d->transport_registry.isRegistered(ep_spec.type)) {
+        auto parse_result = d->transport_registry[ep_spec.type]->parseConfig(ep_spec.config);
+        if (parse_result.ok()) {
+          config_validation_result.success = true;
+          config_validation_result.messages.push_back("[Manager]: The endpoint type [" + ep_spec.type +
+                                                      "] is registered and the given config is VALID.");
+        } else {
+          config_validation_result.success = false;
+          config_validation_result.messages.push_back("Manager]: The endpoint type [" + ep_spec.type +
+                                                      "] is registered HOWEVER the given config is INVALID.");
+        }
+      } else {
+        config_validation_result.success = false;
+        config_validation_result.messages.push_back("[Manager]: The endpoint type [" + ep_spec.type + "] is not registered.");
+      }
+      entry_result.merge(config_validation_result);
+      result.endpoint_plan_result[ep_name] = entry_result;
+    }
+
+    const std::unordered_map<std::string, AgentEntry>& plan_agent = plan.agent_list;
+    for (auto& [ag_name, ag_spec] : plan_agent) {
+      OperationResult entry_result;
+
+      OperationResult name_collision_result;
+      auto it = d->agents.find(ag_name);
+      if (it == d->agents.end()) {
+        name_collision_result.success = true;
+        name_collision_result.messages.push_back("[Manager]: The name [" + ag_name + "] is AVAILABLE to be used as an Agent name.");
+      } else {
+        name_collision_result.success = false;
+        name_collision_result.messages.push_back("[Manager]: The name [" + ag_name + "] is NOT AVAILABLE to be used as an Agent name.");
+      }
+      entry_result.merge(name_collision_result);
+
+      OperationResult config_validation_result;
+      if (d->agent_registry.isRegistered(ag_spec.type)) {
+        auto parse_result = d->agent_registry[ag_spec.type]->parseConfig(ag_spec.config);
+        if (parse_result.ok()) {
+          config_validation_result.success = true;
+          config_validation_result.messages.push_back("[Manager]: The agent type [" + ag_spec.type +
+                                                      "] is registered and the given config is VALID.");
+        } else {
+          config_validation_result.success = false;
+          config_validation_result.messages.push_back("Manager]: The agent type [" + ag_spec.type +
+                                                      "] is registered HOWEVER the given config is INVALID.");
+        }
+      } else {
+        config_validation_result.success = false;
+        config_validation_result.messages.push_back("[Manager]: The agent type [" + ag_spec.type + "] is not registered.");
+      }
+      entry_result.merge(config_validation_result);
+      result.agent_plan_result[ag_name] = entry_result;
+    }
+
     return result;
   }
 
