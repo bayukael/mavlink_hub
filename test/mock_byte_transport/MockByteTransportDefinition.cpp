@@ -31,4 +31,9 @@ namespace pendarlab::app::mavlink_hub::test
   {
     return std::make_unique<MockByteTransport>();
   }
+
+  extern "C" const MockByteTransportDefinition* getMockTransportDefinition(){
+    static MockByteTransportDefinition mock_transport_def;
+    return &mock_transport_def;
+  }
 } // namespace pendarlab::app::mavlink_hub::test

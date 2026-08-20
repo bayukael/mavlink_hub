@@ -32,4 +32,9 @@ namespace pendarlab::app::mavlink_hub::test
     return std::make_unique<MockAgent>();
   }
 
+  extern "C" const MockAgentDefinition* getMockAgentDefinition(){
+    static MockAgentDefinition mock_agent_def;
+    return &mock_agent_def;
+  }
+
 } // namespace pendarlab::app::mavlink_hub::test
