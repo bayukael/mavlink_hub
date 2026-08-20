@@ -233,7 +233,7 @@ add_executable(MavlinkHubManagerTest
   test/manager/manager_test.cpp
 )
 target_include_directories(MavlinkHubManagerTest PUBLIC 
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
     $<BUILD_INTERFACE:${MAVLINK_HEADER_DIR}/include>
 )
 target_compile_options(MavlinkHubManagerTest
@@ -249,18 +249,24 @@ target_link_libraries(MavlinkHubManagerTest
 )
 
 ##############################################################################
-############################     Manager Test    #############################
+##########################     Lib Loader Test     ###########################
 ##############################################################################
 add_executable(MavlinkHubLibLoaderTest
   test/lib_loader/lib_loader_test.cpp
 )
 target_include_directories(MavlinkHubLibLoaderTest PUBLIC 
-    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
-    $<BUILD_INTERFACE:${MAVLINK_HEADER_DIR}/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
 )
 target_compile_options(MavlinkHubLibLoaderTest
   PRIVATE -Wno-address-of-packed-member
 )
 target_link_libraries(MavlinkHubLibLoaderTest
   PRIVATE gtest
+  PRIVATE pendarlab::ByteTransport
+  PRIVATE MavlinkHubAgentRegistry
+  PRIVATE MavlinkHubLibLoader
+)
+target_compile_definitions(MavlinkHubLibLoaderTest
+  PRIVATE MOCK_BYTE_TRANSPORT_LIB_PATH="$<TARGET_FILE:MavlinkHubMockByteTransport>"
+  PRIVATE MOCK_AGENT_LIB_PATH="$<TARGET_FILE:MavlinkHubMockAgent>"
 )
