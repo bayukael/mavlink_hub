@@ -46,6 +46,10 @@ namespace pendarlab::app::mavlink_hub
         /* code */
         break;
 
+      case UserCommandType::DELETE_CURRENT_PLAN:
+        /* code */
+        break;
+
       case UserCommandType::GET_STATUS:
         /* code */
         break;
