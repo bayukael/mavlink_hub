@@ -560,7 +560,8 @@ protected:
 
 TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingBestEffortPolicyValidUserPlanShouldSucceed)
 {
-  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::BEST_EFFORT);
+  plan.policy = UserPlanPolicy::BEST_EFFORT;
+  ExecutionResultList result = manager.executePlan(plan);
 
   // Check if names in the plan are registered
   for (auto& ag_name : ag_name_list) {
@@ -599,7 +600,8 @@ TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingBestEffortPolicyValidUser
 
 TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingDiscardPolicyValidUserPlanShouldSucceed)
 {
-  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::DISCARD);
+  plan.policy = UserPlanPolicy::DISCARD;
+  ExecutionResultList result = manager.executePlan(plan);
 
   for (auto& ag_name : ag_name_list) {
     auto it = result.agent_plan_result.find(ag_name);
@@ -619,7 +621,8 @@ TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingBestEffortPolicyValidUser
   plan.agent_list[ag_name_list[1]].config.erase("a_required_string");
   plan.endpoint_list[ep_name_list[2]].type = "unregistered_type";
   plan.endpoint_list[ep_name_list[3]].config.erase("a_required_string");
-  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::BEST_EFFORT);
+  plan.policy = UserPlanPolicy::BEST_EFFORT;
+  ExecutionResultList result = manager.executePlan(plan);
 
   for (auto& ag_name : ag_name_list) {
     auto it = result.agent_plan_result.find(ag_name);
@@ -652,7 +655,8 @@ TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingDiscardPolicyValidUserPla
   plan.agent_list[ag_name_list[1]].config.erase("a_required_string");
   plan.endpoint_list[ep_name_list[2]].type = "unregistered_type";
   plan.endpoint_list[ep_name_list[3]].config.erase("a_required_string");
-  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::DISCARD);
+  plan.policy = UserPlanPolicy::DISCARD;
+  ExecutionResultList result = manager.executePlan(plan);
 
   for (auto& ag_name : ag_name_list) {
     auto it = result.agent_plan_result.find(ag_name);
@@ -701,7 +705,8 @@ protected:
 
 TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingBestEffortPolicyValidUserPlanShouldRegisterAllEntries)
 {
-  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::BEST_EFFORT);
+  plan.policy = UserPlanPolicy::BEST_EFFORT;
+  ExecutionResultList result = manager.executePlan(plan);
   // Check if names in the plan are registered
   for (auto& ag_name : ag_name_list) {
     auto it = result.agent_plan_result.find(ag_name);
@@ -717,7 +722,8 @@ TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingBestEffortPolicyValidU
 
 TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingDiscardPolicyValidUserPlanShouldRegisterAllEntries)
 {
-  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::DISCARD);
+  plan.policy = UserPlanPolicy::DISCARD;
+  ExecutionResultList result = manager.executePlan(plan);
   // Check if names in the plan are registered
   for (auto& ag_name : ag_name_list) {
     auto it = result.agent_plan_result.find(ag_name);
@@ -737,7 +743,8 @@ TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingBestEffortPolicyWithSo
   plan.endpoint_list.erase(ep_name_list[2]);
   ep_name_list[2] = "m_ep1";
   plan.endpoint_list[ep_name_list[3]].config.erase("a_required_string");
-  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::BEST_EFFORT);
+  plan.policy = UserPlanPolicy::BEST_EFFORT;
+  ExecutionResultList result = manager.executePlan(plan);
   // Check if names in the plan are registered
   for (auto& ag_name : ag_name_list) {
     auto it = result.agent_plan_result.find(ag_name);
@@ -762,7 +769,8 @@ TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingDiscardPolicyWithSomeI
   plan.endpoint_list.erase(ep_name_list[2]);
   ep_name_list[2] = "m_ep1";
   plan.endpoint_list[ep_name_list[3]].config.erase("a_required_string");
-  ExecutionResultList result = manager.executePlan(plan, UserPlanPolicy::DISCARD);
+  plan.policy = UserPlanPolicy::DISCARD;
+  ExecutionResultList result = manager.executePlan(plan);
   // Check if names in the plan are registered
   for (auto& ag_name : ag_name_list) {
     auto it = result.agent_plan_result.find(ag_name);
@@ -776,24 +784,25 @@ TEST_F(UserPlanExecutionWithNonEmptyManagerTest, ExecutingDiscardPolicyWithSomeI
   }
 }
 
-class MavlinkEndpointUserManagementTest : public testing::Test, public ManagerTestSetup{
+class MavlinkEndpointUserManagementTest : public testing::Test, public ManagerTestSetup
+{
 protected:
-std::string requester_name = "the_requester";
-std::string endpoint_name = "the_endpoint";
-  void SetUp() override {
-    manager.addMavlinkEndpoint(endpoint_name);
-  }
+  std::string requester_name = "the_requester";
+  std::string endpoint_name = "the_endpoint";
+  void SetUp() override { manager.addMavlinkEndpoint(endpoint_name); }
   void TearDown() override {}
 };
 
-TEST_F(MavlinkEndpointUserManagementTest, CreatingEndpointUserShouldIncreaseUserCount){
+TEST_F(MavlinkEndpointUserManagementTest, CreatingEndpointUserShouldIncreaseUserCount)
+{
   std::unique_ptr<IMavlinkEndpointUser> ep_user1 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
   EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 1);
   std::unique_ptr<IMavlinkEndpointUser> ep_user2 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
   EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 2);
 }
 
-TEST_F(MavlinkEndpointUserManagementTest, RemovingEndpointUserShouldDecreaseUserCount){
+TEST_F(MavlinkEndpointUserManagementTest, RemovingEndpointUserShouldDecreaseUserCount)
+{
   std::unique_ptr<IMavlinkEndpointUser> ep_user1 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
   std::unique_ptr<IMavlinkEndpointUser> ep_user2 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
   std::unique_ptr<IMavlinkEndpointUser> ep_user3 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
@@ -806,7 +815,8 @@ TEST_F(MavlinkEndpointUserManagementTest, RemovingEndpointUserShouldDecreaseUser
   EXPECT_EQ(manager.getMavlinkEndpointUserList(endpoint_name).value()[requester_name], 0);
 }
 
-TEST_F(MavlinkEndpointUserManagementTest, DeletingEndpointUserShouldDecreaseUserCount){
+TEST_F(MavlinkEndpointUserManagementTest, DeletingEndpointUserShouldDecreaseUserCount)
+{
   std::unique_ptr<IMavlinkEndpointUser> ep_user1 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
   std::unique_ptr<IMavlinkEndpointUser> ep_user2 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
   std::unique_ptr<IMavlinkEndpointUser> ep_user3 = manager.createMavlinkEndpointUser(endpoint_name, requester_name);
@@ -872,8 +882,6 @@ TEST_F(ManagerResourceRequesterTest, GettingNumberOfMavlinkEndpointUserFromANonE
   auto result = manager.getMavlinkEndpointUserList("not_existing_endpoint");
   EXPECT_EQ(result, std::nullopt);
 }
-
-
 
 TEST_F(ManagerResourceRequesterTest, GettingNumberOfMavlinkEndpointUserShouldGiveTheCorrectNumber)
 {

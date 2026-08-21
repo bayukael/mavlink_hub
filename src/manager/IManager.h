@@ -3,7 +3,6 @@
 #include "common/types/OperationResult.h"
 #include "manager/types/ExecutionResultList.h"
 #include "manager/types/UserPlan.h"
-#include "manager/types/UserPlanPolicy.h"
 
 #include <mavlink_endpoint/MavlinkEndpointState.h>
 #include <mavlink_hub_sdk/agent/AgentState.h>
@@ -24,7 +23,7 @@ namespace pendarlab::app::mavlink_hub
 
   public:
     virtual ~IManager() = default;
-    virtual ExecutionResultList executePlan(const UserPlan& plan, const UserPlanPolicy& policy) = 0;
+    virtual ExecutionResultList executePlan(const UserPlan& plan) = 0;
     virtual ExecutionResultList validatePlan(const UserPlan& plan) = 0;
     virtual std::vector<std::string> getMavlinkEndpointList() = 0;
     virtual std::optional<MavlinkEndpointState> getMavlinkEndpointState(const std::string& name) = 0;
