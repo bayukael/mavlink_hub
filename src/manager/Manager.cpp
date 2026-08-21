@@ -2,6 +2,7 @@
 
 #include "manager/ManagerResourceRequester.h"
 #include "manager/mavlink_endpoint_user/MavlinkEndpointUser.h"
+#include "manager/types/UserPlanPolicy.h"
 
 #include <mavlink_endpoint/MavlinkEndpoint.h>
 #include <mavlink_hub_sdk/agent/Agent.h>
@@ -54,9 +55,10 @@ namespace pendarlab::app::mavlink_hub
   Manager::Manager(Manager&&) noexcept = default;
   Manager& Manager::operator=(Manager&&) noexcept = default;
 
-  ExecutionResultList Manager::executePlan(const UserPlan& plan, const UserPlanPolicy& policy)
+  ExecutionResultList Manager::executePlan(const UserPlan& plan)
   {
     ExecutionResultList result;
+    const UserPlanPolicy& policy = plan.policy;
 
     ExecutionResultList validation_result = validatePlan(plan);
     bool discard_plan = false;
