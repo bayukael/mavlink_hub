@@ -1,0 +1,17 @@
+{
+  "policy": "best_effort",
+  "endpoint_list": [
+    {
+      "name": "endpoint-1",
+      "type": "endpoint-type-1",
+      "config": {},
+      "connect_on_create": false
+    },
+    {
+      "name": "endpoint-2",
+      "type": "endpoint-type-2",
+      "config": {},
+      "connect_on_create": true
+    }
+  ]
+}

@@ -286,3 +286,21 @@ target_compile_definitions(MavlinkHubLibLoaderTest
   PRIVATE MOCK_BYTE_TRANSPORT_LIB_PATH="$<TARGET_FILE:MavlinkHubMockByteTransport>"
   PRIVATE MOCK_AGENT_LIB_PATH="$<TARGET_FILE:MavlinkHubMockAgent>"
 )
+
+##############################################################################
+########################     Json Utilities Test     #########################
+##############################################################################
+add_executable(MavlinkHubJsonUtilsTest
+  test/app/common/json_utils/json_utils_test.cpp
+)
+target_include_directories(MavlinkHubJsonUtilsTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+target_link_libraries(MavlinkHubJsonUtilsTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubJsonUtils
+)
+target_compile_definitions(MavlinkHubJsonUtilsTest
+  PRIVATE TEST_PLAN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/app/common/json_utils/"
+)
