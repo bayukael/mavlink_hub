@@ -125,6 +125,22 @@ target_link_libraries(MavlinkHubLibLoader
 set_target_properties(MavlinkHubLibLoader PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_lib_loader)
 
 ##############################################################################
+##############################     JsonUtils     #############################
+##############################################################################
+add_library(MavlinkHubJsonUtils SHARED
+  src/common/json_utils/JsonUtils.cpp
+)
+target_include_directories(MavlinkHubJsonUtils PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+# target_link_libraries(MavlinkHubJsonUtils
+#     PUBLIC pendarlab::MavlinkHubSdk
+# )
+set_target_properties(MavlinkHubJsonUtils PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_json_utils)
+
+##############################################################################
 #############################     AppService     #############################
 ##############################################################################
 add_library(MavlinkHubAppService SHARED
