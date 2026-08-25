@@ -40,6 +40,7 @@ namespace pendarlab::app::mavlink_hub
         if (file_stream.is_open()) {
           std::optional<UserPlan> user_plan = fstreamToUserPlan(file_stream);
           if (user_plan.has_value()) {
+            // TODO: add a check whether the plan is valid according to the manager
             d->current_plan = user_plan;
             result.success = true;
             result.message.push_back("[AppService]: Plan is loaded");
@@ -57,6 +58,7 @@ namespace pendarlab::app::mavlink_hub
       case UserCommandType::LOAD_PLAN_FROM_JSON_TEXT: {
         std::optional<UserPlan> user_plan = stringToUserPlan(cmd.payload);
         if (user_plan.has_value()) {
+          // TODO: add a check whether the plan is valid according to the manager
           d->current_plan = user_plan;
           result.success = true;
           result.message.push_back("[AppService]: Plan is loaded");
