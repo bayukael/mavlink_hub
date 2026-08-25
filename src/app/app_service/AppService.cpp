@@ -3,7 +3,11 @@
 #include "app/lib_loader/LibLoader.h"
 #include "app/types/CommandResult.h"
 #include "app/types/UserCommandType.h"
+#include "common/json_utils/JsonUtils.h"
 #include "manager/Manager.h"
+
+#include <fstream>
+#include <optional>
 
 namespace pendarlab::app::mavlink_hub
 {
@@ -11,6 +15,7 @@ namespace pendarlab::app::mavlink_hub
     AppServiceImpl(IManager&, LibLoader&);
     IManager& manager;
     LibLoader& lib_loader;
+    std::optional<UserPlan> current_plan;
   };
 
   AppService::AppServiceImpl::AppServiceImpl(IManager& mgr, LibLoader& loader) : manager(mgr), lib_loader(loader)
@@ -30,25 +35,61 @@ namespace pendarlab::app::mavlink_hub
   {
     CommandResult result;
     switch (cmd.cmd_type) {
-      case UserCommandType::LOAD_PLAN_FROM_PATH:
-        /* code */
+      case UserCommandType::LOAD_PLAN_FROM_PATH: {
+        std::ifstream file_stream(cmd.payload);
+        if (file_stream.is_open()) {
+          std::optional<UserPlan> user_plan = fstreamToUserPlan(file_stream);
+          if (user_plan.has_value()) {
+            d->current_plan = user_plan;
+            result.success = true;
+            result.message.push_back("[AppService]: Plan is loaded");
+          } else {
+            result.success = false;
+            result.message.push_back("[AppService]: Plan is not loaded because of parsing error");
+          }
+        } else {
+          result.success = false;
+          result.message.push_back("[AppService]: Plan is not loaded because the file [" + cmd.payload + "] does not exist");
+        }
         break;
+      }
 
-      case UserCommandType::LOAD_PLAN_FROM_JSON_TEXT:
-        /* code */
+      case UserCommandType::LOAD_PLAN_FROM_JSON_TEXT: {
+        std::optional<UserPlan> user_plan = stringToUserPlan(cmd.payload);
+        if (user_plan.has_value()) {
+          d->current_plan = user_plan;
+          result.success = true;
+          result.message.push_back("[AppService]: Plan is loaded");
+        } else {
+          result.success = false;
+          result.message.push_back("[AppService]: Plan is not loaded because of parsing error");
+        }
         break;
+      }
 
       case UserCommandType::GET_CURRENT_PLAN:
         /* code */
         break;
 
-      case UserCommandType::APPLY_CURRENT_PLAN:
-        /* code */
+      case UserCommandType::APPLY_CURRENT_PLAN: {
+        if (d->current_plan.has_value()) {
+          auto execute_result = d->manager.executePlan(d->current_plan.value());
+          result.success = true;
+          result.message.push_back("[AppService]: The current plan is applied and the detailed report has been produced.");
+          result.data = executionResultListToString(execute_result);
+        } else {
+          result.success = false;
+          result.message.push_back("[AppService]: Plan is not applied because there is no plan loaded");
+        }
         break;
+      }
 
-      case UserCommandType::DELETE_CURRENT_PLAN:
-        /* code */
+      case UserCommandType::DELETE_CURRENT_PLAN: {
+        d->current_plan = std::nullopt;
+        result.success = true;
+        result.message.push_back("[AppService]: Current plan is removed. There is no loaded plan now.");
         break;
+      }
 
       case UserCommandType::GET_STATUS:
         /* code */
