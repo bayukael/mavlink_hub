@@ -155,6 +155,7 @@ target_link_libraries(MavlinkHubAppService
   PUBLIC MavlinkHubStartupArgsParser
   PUBLIC MavlinkHubCliUiHandler
   PUBLIC MavlinkHubLibLoader
+  PUBLIC MavlinkHubJsonUtils
   PUBLIC pendarlab::MavlinkHubSdk
 )
 set_target_properties(MavlinkHubAppService PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_app_service)

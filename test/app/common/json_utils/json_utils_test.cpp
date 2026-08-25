@@ -1,7 +1,9 @@
 #include <common/json_utils/JsonUtils.h>
 #include <fstream>
 #include <gtest/gtest.h>
+#include <common/types/OperationResult.h>
 #include <manager/types/AgentEntry.h>
+#include <manager/types/ExecutionResultList.h>
 #include <manager/types/MavlinkEndpointEntry.h>
 #include <manager/types/UserPlan.h>
 #include <optional>
@@ -11,6 +13,8 @@
 using MavlinkEndpointEntry = pendarlab::app::mavlink_hub::MavlinkEndpointEntry;
 using AgentEntry = pendarlab::app::mavlink_hub::AgentEntry;
 using UserPlan = pendarlab::app::mavlink_hub::UserPlan;
+using ExecutionResultList = pendarlab::app::mavlink_hub::ExecutionResultList;
+using OperationResult = pendarlab::app::mavlink_hub::OperationResult;
 
 class JsonUtilsConvertToUserPlanTest : public testing::Test
 {
@@ -64,7 +68,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithBestEffortPolicyIsExtractedP
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(agent_entry.config.size(), correct_agent_list[agent_name].config.size());
-    for(const auto& [config_key, config_val] : agent_entry.config){
+    for (const auto& [config_key, config_val] : agent_entry.config) {
       auto it2 = correct_agent_list[agent_name].config.find(config_key);
       EXPECT_NE(it2, correct_agent_list[agent_name].config.end());
     }
@@ -77,7 +81,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithBestEffortPolicyIsExtractedP
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(endpoint_entry.config.size(), correct_endpoint_list[endpoint_name].config.size());
-    for(const auto& [config_key, config_val] : endpoint_entry.config){
+    for (const auto& [config_key, config_val] : endpoint_entry.config) {
       auto it2 = correct_endpoint_list[endpoint_name].config.find(config_key);
       EXPECT_NE(it2, correct_endpoint_list[endpoint_name].config.end());
     }
@@ -95,7 +99,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyIsExtractedProp
   std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
-  
+
   // Check whether all entries in agent_list exist in correct_agent_list
   ASSERT_EQ(user_plan.agent_list.size(), correct_agent_list.size());
   for (const auto& [agent_name, agent_entry] : user_plan.agent_list) {
@@ -104,7 +108,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyIsExtractedProp
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(agent_entry.config.size(), correct_agent_list[agent_name].config.size());
-    for(const auto& [config_key, config_val] : agent_entry.config){
+    for (const auto& [config_key, config_val] : agent_entry.config) {
       auto it2 = correct_agent_list[agent_name].config.find(config_key);
       EXPECT_NE(it2, correct_agent_list[agent_name].config.end());
     }
@@ -117,7 +121,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyIsExtractedProp
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(endpoint_entry.config.size(), correct_endpoint_list[endpoint_name].config.size());
-    for(const auto& [config_key, config_val] : endpoint_entry.config){
+    for (const auto& [config_key, config_val] : endpoint_entry.config) {
       auto it2 = correct_endpoint_list[endpoint_name].config.find(config_key);
       EXPECT_NE(it2, correct_endpoint_list[endpoint_name].config.end());
     }
@@ -158,7 +162,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithBestEffortPolicyAndNoAgentLi
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(endpoint_entry.config.size(), correct_endpoint_list[endpoint_name].config.size());
-    for(const auto& [config_key, config_val] : endpoint_entry.config){
+    for (const auto& [config_key, config_val] : endpoint_entry.config) {
       auto it2 = correct_endpoint_list[endpoint_name].config.find(config_key);
       EXPECT_NE(it2, correct_endpoint_list[endpoint_name].config.end());
     }
@@ -177,7 +181,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyAndNoAgentListI
   std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
-  
+
   EXPECT_EQ(user_plan.agent_list.size(), correct_agent_list.size());
 
   ASSERT_EQ(user_plan.endpoint_list.size(), correct_endpoint_list.size());
@@ -187,7 +191,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyAndNoAgentListI
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(endpoint_entry.config.size(), correct_endpoint_list[endpoint_name].config.size());
-    for(const auto& [config_key, config_val] : endpoint_entry.config){
+    for (const auto& [config_key, config_val] : endpoint_entry.config) {
       auto it2 = correct_endpoint_list[endpoint_name].config.find(config_key);
       EXPECT_NE(it2, correct_endpoint_list[endpoint_name].config.end());
     }
@@ -215,7 +219,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithBestEffortPolicyAndNoEndpoin
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(agent_entry.config.size(), correct_agent_list[agent_name].config.size());
-    for(const auto& [config_key, config_val] : agent_entry.config){
+    for (const auto& [config_key, config_val] : agent_entry.config) {
       auto it2 = correct_agent_list[agent_name].config.find(config_key);
       EXPECT_NE(it2, correct_agent_list[agent_name].config.end());
     }
@@ -236,7 +240,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyAndNoEndpointLi
   std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
-  
+
   // Check whether all entries in agent_list exist in correct_agent_list
   ASSERT_EQ(user_plan.agent_list.size(), correct_agent_list.size());
   for (const auto& [agent_name, agent_entry] : user_plan.agent_list) {
@@ -245,7 +249,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyAndNoEndpointLi
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(agent_entry.config.size(), correct_agent_list[agent_name].config.size());
-    for(const auto& [config_key, config_val] : agent_entry.config){
+    for (const auto& [config_key, config_val] : agent_entry.config) {
       auto it2 = correct_agent_list[agent_name].config.find(config_key);
       EXPECT_NE(it2, correct_agent_list[agent_name].config.end());
     }
@@ -260,7 +264,6 @@ TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithBestEffortPolicyAndSomeInvalidEnt
   std::string file_path = file_dir + "plan_best_effort_missing_required_field.json";
   correct_agent_list.erase("agent-2");
   correct_endpoint_list.erase("endpoint-2");
-
 
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
@@ -277,7 +280,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithBestEffortPolicyAndSomeInvalidEnt
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(agent_entry.config.size(), correct_agent_list[agent_name].config.size());
-    for(const auto& [config_key, config_val] : agent_entry.config){
+    for (const auto& [config_key, config_val] : agent_entry.config) {
       auto it2 = correct_agent_list[agent_name].config.find(config_key);
       EXPECT_NE(it2, correct_agent_list[agent_name].config.end());
     }
@@ -290,7 +293,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithBestEffortPolicyAndSomeInvalidEnt
 
     // Now we check whether the config of an agent is the same as the correct one.
     ASSERT_EQ(endpoint_entry.config.size(), correct_endpoint_list[endpoint_name].config.size());
-    for(const auto& [config_key, config_val] : endpoint_entry.config){
+    for (const auto& [config_key, config_val] : endpoint_entry.config) {
       auto it2 = correct_endpoint_list[endpoint_name].config.find(config_key);
       EXPECT_NE(it2, correct_endpoint_list[endpoint_name].config.end());
     }
@@ -311,6 +314,40 @@ TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithDiscardPolicyAndSomeInvalidEntrie
   EXPECT_EQ(parsed_plan.has_value(), false);
 }
 
+class ExecutionResultListToStringTest : public testing::Test
+{
+protected:
+  ExecutionResultList list;
+  void SetUp() override {
+    OperationResult op_result;
+    op_result.success = true;
+    op_result.messages.push_back("endpoint-1 success");
+    list.endpoint_plan_result["endpoint-1"] = op_result;
+
+    op_result.messages.clear();
+    op_result.success = true;
+    op_result.messages.push_back("endpoint-2 success but with some warning");
+    op_result.messages.push_back("endpoint-2 uses a deprecated API");
+    list.endpoint_plan_result["endpoint-2"] = op_result;
+
+    op_result.messages.clear();
+    op_result.success = false;
+    op_result.messages.push_back("agent-1 failed to create");
+    op_result.messages.push_back("agent-1 type does not exist");
+    list.agent_plan_result["agent-1"] = op_result;
+
+    op_result.messages.clear();
+    op_result.success = true;
+    op_result.messages.push_back("agent-2 failed to create");
+    op_result.messages.push_back("agent-2 cannot obtain required resources");
+    list.agent_plan_result["agent-2"] = op_result;
+  }
+  void TearDown() override {}
+};
+
+TEST_F(ExecutionResultListToStringTest, ConvertingExecutionResultListToStringShouldProduceCorrectString){
+  std::cout << executionResultListToString(list) << std::endl;
+}
 
 int main(int argc, char* argv[])
 {

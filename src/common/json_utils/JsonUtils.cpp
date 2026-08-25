@@ -2,6 +2,8 @@
 
 #include "manager/types/MavlinkEndpointEntry.h"
 
+#include <jsoncons/json.hpp>
+
 using namespace jsoncons;
 
 namespace pendarlab::app::mavlink_hub
@@ -162,5 +164,35 @@ namespace pendarlab::app::mavlink_hub
       return std::nullopt;
     }
     return jsonToUserPlan(plan_json);
+  }
+
+  std::string executionResultListToString(const ExecutionResultList& list){
+    json execution_result;
+
+    execution_result["endpoint_list"] = json{json_array_arg};
+    for(const auto& [name, result] : list.endpoint_plan_result){
+      json entry_result;
+      entry_result["name"] = name;
+      entry_result["success"] = result.success;
+      entry_result["messages"] = json{json_array_arg};
+      for(const auto& msg : result.messages){
+        entry_result["messages"].push_back(msg);
+      }
+      execution_result["endpoint_list"].push_back(entry_result);
+    }
+    
+    execution_result["agent_list"] = json{json_array_arg};
+    for(const auto& [name, result] : list.agent_plan_result){
+      json entry_result;
+      entry_result["name"] = name;
+      entry_result["success"] = result.success;
+      entry_result["messages"] = json{json_array_arg};
+      for(const auto& msg : result.messages){
+        entry_result["messages"].push_back(msg);
+      }
+      execution_result["agent_list"].push_back(entry_result);
+    }
+
+    return execution_result.as_string();
   }
 } // namespace pendarlab::app::mavlink_hub
