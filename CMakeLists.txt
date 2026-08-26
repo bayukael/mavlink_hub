@@ -269,7 +269,7 @@ target_link_libraries(MavlinkHubManagerTest
 ##########################     Lib Loader Test     ###########################
 ##############################################################################
 add_executable(MavlinkHubLibLoaderTest
-  test/lib_loader/lib_loader_test.cpp
+  test/app/lib_loader/lib_loader_test.cpp
 )
 target_include_directories(MavlinkHubLibLoaderTest PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
@@ -305,3 +305,15 @@ target_link_libraries(MavlinkHubJsonUtilsTest
 target_compile_definitions(MavlinkHubJsonUtilsTest
   PRIVATE TEST_PLAN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/app/common/json_utils/"
 )
+
+##############################################################################
+##########################     App Service Test     ###########################
+##############################################################################
+add_executable(MavlinkHubAppServiceTest
+  test/app/app_service/app_service_test.cpp
+)
+target_include_directories(MavlinkHubAppServiceTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+
