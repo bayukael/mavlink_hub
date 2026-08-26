@@ -6,6 +6,7 @@ namespace pendarlab::app::mavlink_hub
     LOAD_PLAN_FROM_PATH,
     LOAD_PLAN_FROM_JSON_TEXT,
     GET_CURRENT_PLAN,
+    CHECK_CURRENT_PLAN,
     APPLY_CURRENT_PLAN,
     DELETE_CURRENT_PLAN,
     GET_STATUS,

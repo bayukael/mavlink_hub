@@ -40,7 +40,6 @@ namespace pendarlab::app::mavlink_hub
         if (file_stream.is_open()) {
           std::optional<UserPlan> user_plan = fstreamToUserPlan(file_stream);
           if (user_plan.has_value()) {
-            // TODO: add a check whether the plan is valid according to the manager
             d->current_plan = user_plan;
             result.success = true;
             result.message.push_back("[AppService]: Plan is loaded");
@@ -58,7 +57,6 @@ namespace pendarlab::app::mavlink_hub
       case UserCommandType::LOAD_PLAN_FROM_JSON_TEXT: {
         std::optional<UserPlan> user_plan = stringToUserPlan(cmd.payload);
         if (user_plan.has_value()) {
-          // TODO: add a check whether the plan is valid according to the manager
           d->current_plan = user_plan;
           result.success = true;
           result.message.push_back("[AppService]: Plan is loaded");
@@ -72,6 +70,19 @@ namespace pendarlab::app::mavlink_hub
       case UserCommandType::GET_CURRENT_PLAN:
         /* code */
         break;
+
+      case UserCommandType::CHECK_CURRENT_PLAN: {
+        if (d->current_plan.has_value()) {
+          auto execute_result = d->manager.validatePlan(d->current_plan.value());
+          result.success = true;
+          result.message.push_back("[AppService]: The current plan has been checked and the detailed report has been produced.");
+          result.data = executionResultListToString(execute_result);
+        } else {
+          result.success = false;
+          result.message.push_back("[AppService]: Plan is not checked because there is no plan loaded");
+        }
+        break;
+      }
 
       case UserCommandType::APPLY_CURRENT_PLAN: {
         if (d->current_plan.has_value()) {
