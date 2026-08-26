@@ -125,6 +125,22 @@ target_link_libraries(MavlinkHubLibLoader
 set_target_properties(MavlinkHubLibLoader PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_lib_loader)
 
 ##############################################################################
+##############################     JsonUtils     #############################
+##############################################################################
+add_library(MavlinkHubJsonUtils SHARED
+  src/common/json_utils/JsonUtils.cpp
+)
+target_include_directories(MavlinkHubJsonUtils PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+# target_link_libraries(MavlinkHubJsonUtils
+#     PUBLIC pendarlab::MavlinkHubSdk
+# )
+set_target_properties(MavlinkHubJsonUtils PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_json_utils)
+
+##############################################################################
 #############################     AppService     #############################
 ##############################################################################
 add_library(MavlinkHubAppService SHARED
@@ -139,6 +155,7 @@ target_link_libraries(MavlinkHubAppService
   PUBLIC MavlinkHubStartupArgsParser
   PUBLIC MavlinkHubCliUiHandler
   PUBLIC MavlinkHubLibLoader
+  PUBLIC MavlinkHubJsonUtils
   PUBLIC pendarlab::MavlinkHubSdk
 )
 set_target_properties(MavlinkHubAppService PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_app_service)
@@ -252,7 +269,7 @@ target_link_libraries(MavlinkHubManagerTest
 ##########################     Lib Loader Test     ###########################
 ##############################################################################
 add_executable(MavlinkHubLibLoaderTest
-  test/lib_loader/lib_loader_test.cpp
+  test/app/lib_loader/lib_loader_test.cpp
 )
 target_include_directories(MavlinkHubLibLoaderTest PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
@@ -270,3 +287,33 @@ target_compile_definitions(MavlinkHubLibLoaderTest
   PRIVATE MOCK_BYTE_TRANSPORT_LIB_PATH="$<TARGET_FILE:MavlinkHubMockByteTransport>"
   PRIVATE MOCK_AGENT_LIB_PATH="$<TARGET_FILE:MavlinkHubMockAgent>"
 )
+
+##############################################################################
+########################     Json Utilities Test     #########################
+##############################################################################
+add_executable(MavlinkHubJsonUtilsTest
+  test/app/common/json_utils/json_utils_test.cpp
+)
+target_include_directories(MavlinkHubJsonUtilsTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+target_link_libraries(MavlinkHubJsonUtilsTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubJsonUtils
+)
+target_compile_definitions(MavlinkHubJsonUtilsTest
+  PRIVATE TEST_PLAN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/app/common/json_utils/"
+)
+
+##############################################################################
+##########################     App Service Test     ###########################
+##############################################################################
+add_executable(MavlinkHubAppServiceTest
+  test/app/app_service/app_service_test.cpp
+)
+target_include_directories(MavlinkHubAppServiceTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+

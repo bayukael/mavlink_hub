@@ -1,0 +1,20 @@
+{
+  "policy": "discard",
+  "agent_list": [
+    {
+      "name": "agent-1",
+      "type": "agent-type-1",
+      "config": {}
+    },
+    {
+      "name": "agent-2",
+      "type": "agent-type-2",
+      "config": {}
+    },
+    {
+      "name": "agent-3",
+      "type": "agent-type-3",
+      "config": {}
+    }
+  ]
+}

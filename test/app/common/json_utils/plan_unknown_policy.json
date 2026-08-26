@@ -1,0 +1,34 @@
+{
+  "policy": "unknown_policy",
+  "endpoint_list": [
+    {
+      "name": "endpoint-1",
+      "type": "endpoint-type-1",
+      "config": {},
+      "connect_on_create": false
+    },
+    {
+      "name": "endpoint-2",
+      "type": "endpoint-type-2",
+      "config": {},
+      "connect_on_create": true
+    }
+  ],
+  "agent_list": [
+    {
+      "name": "agent-1",
+      "type": "agent-type-1",
+      "config": {}
+    },
+    {
+      "name": "agent-2",
+      "type": "agent-type-2",
+      "config": {}
+    },
+    {
+      "name": "agent-3",
+      "type": "agent-type-3",
+      "config": {}
+    }
+  ]
+}
