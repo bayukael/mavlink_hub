@@ -8,7 +8,7 @@ using namespace jsoncons;
 using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
 using AgentState = pendarlab::sdk::mavlink_hub::AgentState;
 
-namespace pendarlab::app::mavlink_hub
+namespace pendarlab::app::mavlink_hub::json_utils
 {
   std::optional<std::unordered_map<std::string, MavlinkEndpointEntry>> jsonToEndpointList(const json& j, const UserPlanPolicy& policy)
   {
@@ -305,8 +305,8 @@ namespace pendarlab::app::mavlink_hub
   std::string agentStatusListToJsonString(const std::unordered_map<std::string, pendarlab::sdk::mavlink_hub::AgentState>& list)
   {
     json j_res;
-    j_res["agent_status_list"] = json{json_array_arg};
-    for (const auto& [name, status]: list){
+    j_res["agent_status_list"] = json{ json_array_arg };
+    for (const auto& [name, status] : list) {
       json j_entry;
       j_entry["name"] = name;
       j_entry["status"] = status;
@@ -318,8 +318,8 @@ namespace pendarlab::app::mavlink_hub
   std::string endpointStatusListToJsonString(const std::unordered_map<std::string, pendarlab::lib::comm::MavlinkEndpointState>& list)
   {
     json j_res;
-    j_res["endpoint_status_list"] = json{json_array_arg};
-    for (const auto& [name, status]: list){
+    j_res["endpoint_status_list"] = json{ json_array_arg };
+    for (const auto& [name, status] : list) {
       json j_entry;
       j_entry["name"] = name;
       j_entry["status"] = status;
@@ -327,4 +327,4 @@ namespace pendarlab::app::mavlink_hub
     }
     return j_res.as_string();
   }
-} // namespace pendarlab::app::mavlink_hub
+} // namespace pendarlab::app::mavlink_hub::json_utils

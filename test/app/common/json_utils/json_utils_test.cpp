@@ -63,7 +63,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithBestEffortPolicyIsExtractedP
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
 
-  std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
 
@@ -103,7 +103,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyIsExtractedProp
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
 
-  std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
 
@@ -143,7 +143,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithUnknownPolicyMustReturnNullo
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
 
-  std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
   EXPECT_EQ(parsed_plan.has_value(), false);
 }
 
@@ -156,7 +156,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithBestEffortPolicyAndNoAgentLi
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
 
-  std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
 
@@ -185,7 +185,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyAndNoAgentListI
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
 
-  std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
 
@@ -214,7 +214,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithBestEffortPolicyAndNoEndpoin
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
 
-  std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
 
@@ -244,7 +244,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, ValidPlanWithDiscardPolicyAndNoEndpointLi
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
 
-  std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
 
@@ -275,7 +275,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithBestEffortPolicyAndSomeInvalidEnt
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
 
-  std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
   ASSERT_EQ(parsed_plan.has_value(), true);
   auto& user_plan = parsed_plan.value();
 
@@ -317,7 +317,7 @@ TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithDiscardPolicyAndSomeInvalidEntrie
   std::ifstream file_stream(file_path);
   ASSERT_EQ(file_stream.is_open(), true);
 
-  std::optional<UserPlan> parsed_plan = fstreamToUserPlan(file_stream);
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
   EXPECT_EQ(parsed_plan.has_value(), false);
 }
 
@@ -360,7 +360,7 @@ TEST_F(ExecutionResultListToJsonStringTest, ConvertingExecutionResultListToJsonS
   json j_actual;
   bool parse_success = true;
   try {
-    j_actual = json::parse(executionResultListToJsonString(list));
+    j_actual = json::parse(json_utils::executionResultListToJsonString(list));
   } catch (const ser_error& e) {
     parse_success = false;
   }
@@ -421,7 +421,7 @@ TEST_F(StatusToJsonStringTest, AgentActiveStateShouldReturnProperJsonString)
 
   j_expected["agent_status"] = "active";
   try {
-    j_actual = json::parse(agentStatusToJsonString(AgentState::ACTIVE));
+    j_actual = json::parse(json_utils::agentStatusToJsonString(AgentState::ACTIVE));
   } catch (const ser_error& e) {
     parse_success = false;
   }
@@ -439,7 +439,7 @@ TEST_F(StatusToJsonStringTest, AgentIdleStateShouldReturnProperJsonString)
 
   j_expected["agent_status"] = "idle";
   try {
-    j_actual = json::parse(agentStatusToJsonString(AgentState::IDLE));
+    j_actual = json::parse(json_utils::agentStatusToJsonString(AgentState::IDLE));
   } catch (const ser_error& e) {
     parse_success = false;
   }
@@ -457,7 +457,7 @@ TEST_F(StatusToJsonStringTest, AgentStartingStateShouldReturnProperJsonString)
 
   j_expected["agent_status"] = "starting";
   try {
-    j_actual = json::parse(agentStatusToJsonString(AgentState::STARTING));
+    j_actual = json::parse(json_utils::agentStatusToJsonString(AgentState::STARTING));
   } catch (const ser_error& e) {
     parse_success = false;
   }
@@ -475,7 +475,7 @@ TEST_F(StatusToJsonStringTest, AgentStoppingStateShouldReturnProperJsonString)
 
   j_expected["agent_status"] = "stopping";
   try {
-    j_actual = json::parse(agentStatusToJsonString(AgentState::STOPPING));
+    j_actual = json::parse(json_utils::agentStatusToJsonString(AgentState::STOPPING));
   } catch (const ser_error& e) {
     parse_success = false;
   }
@@ -492,7 +492,7 @@ TEST_F(StatusToJsonStringTest, EndpointDisconnectedStateShouldReturnProperJsonSt
   bool parse_success = true;
   j_expected["endpoint_status"] = "disconnected";
   try {
-    j_actual = json::parse(endpointStatusToJsonString(MavlinkEndpointState::DISCONNECTED));
+    j_actual = json::parse(json_utils::endpointStatusToJsonString(MavlinkEndpointState::DISCONNECTED));
   } catch (const ser_error& e) {
     parse_success = false;
   }
@@ -509,7 +509,7 @@ TEST_F(StatusToJsonStringTest, EndpointConnectedStateShouldReturnProperJsonStrin
   bool parse_success = true;
   j_expected["endpoint_status"] = "connected";
   try {
-    j_actual = json::parse(endpointStatusToJsonString(MavlinkEndpointState::CONNECTED));
+    j_actual = json::parse(json_utils::endpointStatusToJsonString(MavlinkEndpointState::CONNECTED));
   } catch (const ser_error& e) {
     parse_success = false;
   }
@@ -526,7 +526,7 @@ TEST_F(StatusToJsonStringTest, EndpointDisconnectingStateShouldReturnProperJsonS
   bool parse_success = true;
   j_expected["endpoint_status"] = "disconnecting";
   try {
-    j_actual = json::parse(endpointStatusToJsonString(MavlinkEndpointState::DISCONNECTING));
+    j_actual = json::parse(json_utils::endpointStatusToJsonString(MavlinkEndpointState::DISCONNECTING));
   } catch (const ser_error& e) {
     parse_success = false;
   }
@@ -543,7 +543,7 @@ TEST_F(StatusToJsonStringTest, EndpointConnectingStateShouldReturnProperJsonStri
   bool parse_success = true;
   j_expected["endpoint_status"] = "connecting";
   try {
-    j_actual = json::parse(endpointStatusToJsonString(MavlinkEndpointState::CONNECTING));
+    j_actual = json::parse(json_utils::endpointStatusToJsonString(MavlinkEndpointState::CONNECTING));
   } catch (const ser_error& e) {
     parse_success = false;
   }
