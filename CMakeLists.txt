@@ -23,7 +23,6 @@ add_library(MavlinkHubAgentRegistry SHARED
 target_include_directories(MavlinkHubAgentRegistry PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
-    $<INSTALL_INTERFACE:include>
 )
 target_link_libraries(MavlinkHubAgentRegistry
     PUBLIC pendarlab::MavlinkHubSdk
@@ -44,6 +43,7 @@ target_include_directories(MavlinkHubManager PUBLIC
 )
 target_link_libraries(MavlinkHubManager
     PUBLIC pendarlab::MavlinkHubSdk
+    PUBLIC pendarlab::MavlinkEndpoint
     PUBLIC MavlinkHubAgentRegistry
 )
 set_target_properties(MavlinkHubManager PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_manager)
@@ -135,9 +135,10 @@ target_include_directories(MavlinkHubJsonUtils PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
 )
-# target_link_libraries(MavlinkHubJsonUtils
-#     PUBLIC pendarlab::MavlinkHubSdk
-# )
+target_link_libraries(MavlinkHubJsonUtils
+    PUBLIC pendarlab::MavlinkHubSdk
+    PUBLIC pendarlab::MavlinkEndpoint
+)
 set_target_properties(MavlinkHubJsonUtils PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_json_utils)
 
 ##############################################################################
