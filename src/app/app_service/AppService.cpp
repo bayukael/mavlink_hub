@@ -38,7 +38,7 @@ namespace pendarlab::app::mavlink_hub
       case UserCommandType::LOAD_PLAN_FROM_PATH: {
         std::ifstream file_stream(cmd.payload);
         if (file_stream.is_open()) {
-          std::optional<UserPlan> user_plan = fstreamToUserPlan(file_stream);
+          std::optional<UserPlan> user_plan = json_utils::fstreamToUserPlan(file_stream);
           if (user_plan.has_value()) {
             d->current_plan = user_plan;
             result.success = true;
@@ -55,7 +55,7 @@ namespace pendarlab::app::mavlink_hub
       }
 
       case UserCommandType::LOAD_PLAN_FROM_JSON_TEXT: {
-        std::optional<UserPlan> user_plan = stringToUserPlan(cmd.payload);
+        std::optional<UserPlan> user_plan = json_utils::stringToUserPlan(cmd.payload);
         if (user_plan.has_value()) {
           d->current_plan = user_plan;
           result.success = true;
@@ -76,7 +76,7 @@ namespace pendarlab::app::mavlink_hub
           auto execute_result = d->manager.validatePlan(d->current_plan.value());
           result.success = true;
           result.message.push_back("[AppService]: The current plan has been checked and the detailed report has been produced.");
-          result.data = executionResultListToJsonString(execute_result);
+          result.data = json_utils::executionResultListToJsonString(execute_result);
         } else {
           result.success = false;
           result.message.push_back("[AppService]: Plan is not checked because there is no plan loaded");
@@ -89,7 +89,7 @@ namespace pendarlab::app::mavlink_hub
           auto execute_result = d->manager.executePlan(d->current_plan.value());
           result.success = true;
           result.message.push_back("[AppService]: The current plan is applied and the detailed report has been produced.");
-          result.data = executionResultListToJsonString(execute_result);
+          result.data = json_utils::executionResultListToJsonString(execute_result);
         } else {
           result.success = false;
           result.message.push_back("[AppService]: Plan is not applied because there is no plan loaded");
