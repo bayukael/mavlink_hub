@@ -1,19 +1,26 @@
 #include <common/json_utils/JsonUtils.h>
+#include <common/types/OperationResult.h>
 #include <fstream>
 #include <gtest/gtest.h>
-#include <common/types/OperationResult.h>
+#include <jsoncons/json.hpp>
 #include <manager/types/AgentEntry.h>
 #include <manager/types/ExecutionResultList.h>
 #include <manager/types/MavlinkEndpointEntry.h>
 #include <manager/types/UserPlan.h>
+#include <mavlink_endpoint/MavlinkEndpointState.h>
+#include <mavlink_hub_sdk/agent/AgentState.h>
 #include <optional>
 #include <string>
 #include <unordered_map>
+
+using namespace jsoncons;
 
 using MavlinkEndpointEntry = pendarlab::app::mavlink_hub::MavlinkEndpointEntry;
 using AgentEntry = pendarlab::app::mavlink_hub::AgentEntry;
 using UserPlan = pendarlab::app::mavlink_hub::UserPlan;
 using ExecutionResultList = pendarlab::app::mavlink_hub::ExecutionResultList;
+using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
+using AgentState = pendarlab::sdk::mavlink_hub::AgentState;
 using OperationResult = pendarlab::app::mavlink_hub::OperationResult;
 
 class JsonUtilsConvertToUserPlanTest : public testing::Test
@@ -314,11 +321,12 @@ TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithDiscardPolicyAndSomeInvalidEntrie
   EXPECT_EQ(parsed_plan.has_value(), false);
 }
 
-class ExecutionResultListToStringTest : public testing::Test
+class ExecutionResultListToJsonStringTest : public testing::Test
 {
 protected:
   ExecutionResultList list;
-  void SetUp() override {
+  void SetUp() override
+  {
     OperationResult op_result;
     op_result.success = true;
     op_result.messages.push_back("endpoint-1 success");
@@ -345,8 +353,203 @@ protected:
   void TearDown() override {}
 };
 
-TEST_F(ExecutionResultListToStringTest, ConvertingExecutionResultListToStringShouldProduceCorrectString){
-  std::cout << executionResultListToString(list) << std::endl;
+TEST_F(ExecutionResultListToJsonStringTest, ConvertingExecutionResultListToJsonStringShouldProduceCorrectString)
+{
+  using namespace pendarlab::app::mavlink_hub;
+
+  json j_actual;
+  bool parse_success = true;
+  try {
+    j_actual = json::parse(executionResultListToJsonString(list));
+  } catch (const ser_error& e) {
+    parse_success = false;
+  }
+
+  ASSERT_EQ(parse_success, true);
+  ASSERT_EQ(j_actual.contains("endpoint_plan_result"), true);
+  ASSERT_EQ(j_actual["endpoint_plan_result"].is_array(), true);
+  ASSERT_EQ(j_actual.contains("agent_plan_result"), true);
+  ASSERT_EQ(j_actual["agent_plan_result"].is_array(), true);
+
+  for (const auto& list_entry : j_actual["endpoint_plan_result"].array_range()) {
+    ASSERT_EQ(list_entry.contains("name"), true);
+    ASSERT_EQ(list_entry.contains("success"), true);
+    ASSERT_EQ(list_entry.contains("messages"), true);
+    ASSERT_EQ(list_entry["messages"].is_array(), true);
+    bool name_ok = false;
+    bool success_ok = false;
+    bool messages_ok = true;
+    for (const auto& [name, op_result] : list.endpoint_plan_result) {
+      if (name == list_entry["name"]) {
+        name_ok = true;
+        if (op_result.success == list_entry["success"].as_bool()) {
+          success_ok = true;
+        }
+        for (const auto& actual_msg : list_entry["messages"].array_range()) {
+          bool found_msg = false;
+          for (const auto& expected_msg : op_result.messages) {
+            if (actual_msg == expected_msg) {
+              found_msg = true;
+            }
+          }
+          if (!found_msg) {
+            messages_ok = false;
+            break;
+          }
+        }
+      }
+    }
+    EXPECT_EQ(name_ok, true);
+    EXPECT_EQ(success_ok, true);
+    EXPECT_EQ(messages_ok,true);
+  }
+}
+
+class StatusToJsonStringTest : public testing::Test
+{
+protected:
+  void SetUp() override {}
+  void TearDown() override {}
+};
+
+TEST_F(StatusToJsonStringTest, AgentActiveStateShouldReturnProperJsonString)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  json j_expected;
+  json j_actual;
+  bool parse_success = true;
+
+  j_expected["agent_status"] = "active";
+  try {
+    j_actual = json::parse(agentStatusToJsonString(AgentState::ACTIVE));
+  } catch (const ser_error& e) {
+    parse_success = false;
+  }
+
+  ASSERT_EQ(parse_success, true);
+  EXPECT_EQ(j_actual, j_expected);
+}
+
+TEST_F(StatusToJsonStringTest, AgentIdleStateShouldReturnProperJsonString)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  json j_expected;
+  json j_actual;
+  bool parse_success = true;
+
+  j_expected["agent_status"] = "idle";
+  try {
+    j_actual = json::parse(agentStatusToJsonString(AgentState::IDLE));
+  } catch (const ser_error& e) {
+    parse_success = false;
+  }
+
+  ASSERT_EQ(parse_success, true);
+  EXPECT_EQ(j_actual, j_expected);
+}
+
+TEST_F(StatusToJsonStringTest, AgentStartingStateShouldReturnProperJsonString)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  json j_expected;
+  json j_actual;
+  bool parse_success = true;
+
+  j_expected["agent_status"] = "starting";
+  try {
+    j_actual = json::parse(agentStatusToJsonString(AgentState::STARTING));
+  } catch (const ser_error& e) {
+    parse_success = false;
+  }
+
+  ASSERT_EQ(parse_success, true);
+  EXPECT_EQ(j_actual, j_expected);
+}
+
+TEST_F(StatusToJsonStringTest, AgentStoppingStateShouldReturnProperJsonString)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  json j_expected;
+  json j_actual;
+  bool parse_success = true;
+
+  j_expected["agent_status"] = "stopping";
+  try {
+    j_actual = json::parse(agentStatusToJsonString(AgentState::STOPPING));
+  } catch (const ser_error& e) {
+    parse_success = false;
+  }
+
+  ASSERT_EQ(parse_success, true);
+  EXPECT_EQ(j_actual, j_expected);
+}
+
+TEST_F(StatusToJsonStringTest, EndpointDisconnectedStateShouldReturnProperJsonString)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  json j_expected;
+  json j_actual;
+  bool parse_success = true;
+  j_expected["endpoint_status"] = "disconnected";
+  try {
+    j_actual = json::parse(endpointStatusToJsonString(MavlinkEndpointState::DISCONNECTED));
+  } catch (const ser_error& e) {
+    parse_success = false;
+  }
+
+  ASSERT_EQ(parse_success, true);
+  EXPECT_EQ(j_actual, j_expected);
+}
+
+TEST_F(StatusToJsonStringTest, EndpointConnectedStateShouldReturnProperJsonString)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  json j_expected;
+  json j_actual;
+  bool parse_success = true;
+  j_expected["endpoint_status"] = "connected";
+  try {
+    j_actual = json::parse(endpointStatusToJsonString(MavlinkEndpointState::CONNECTED));
+  } catch (const ser_error& e) {
+    parse_success = false;
+  }
+
+  ASSERT_EQ(parse_success, true);
+  EXPECT_EQ(j_actual, j_expected);
+}
+
+TEST_F(StatusToJsonStringTest, EndpointDisconnectingStateShouldReturnProperJsonString)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  json j_expected;
+  json j_actual;
+  bool parse_success = true;
+  j_expected["endpoint_status"] = "disconnecting";
+  try {
+    j_actual = json::parse(endpointStatusToJsonString(MavlinkEndpointState::DISCONNECTING));
+  } catch (const ser_error& e) {
+    parse_success = false;
+  }
+
+  ASSERT_EQ(parse_success, true);
+  EXPECT_EQ(j_actual, j_expected);
+}
+
+TEST_F(StatusToJsonStringTest, EndpointConnectingStateShouldReturnProperJsonString)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  json j_expected;
+  json j_actual;
+  bool parse_success = true;
+  j_expected["endpoint_status"] = "connecting";
+  try {
+    j_actual = json::parse(endpointStatusToJsonString(MavlinkEndpointState::CONNECTING));
+  } catch (const ser_error& e) {
+    parse_success = false;
+  }
+
+  ASSERT_EQ(parse_success, true);
+  EXPECT_EQ(j_actual, j_expected);
 }
 
 int main(int argc, char* argv[])

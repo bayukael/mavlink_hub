@@ -5,6 +5,8 @@
 #include <jsoncons/json.hpp>
 
 using namespace jsoncons;
+using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
+using AgentState = pendarlab::sdk::mavlink_hub::AgentState;
 
 namespace pendarlab::app::mavlink_hub
 {
@@ -144,6 +146,72 @@ namespace pendarlab::app::mavlink_hub
     return plan_result;
   }
 
+  std::string agentStateToString(const AgentState& state)
+  {
+    std::string result;
+    switch (state) {
+      case AgentState::ACTIVE: {
+        result = "active";
+        break;
+      }
+
+      case AgentState::IDLE: {
+        result = "idle";
+        break;
+      }
+
+      case AgentState::STARTING: {
+        result = "starting";
+        break;
+      }
+
+      case AgentState::STOPPING: {
+        result = "stopping";
+        break;
+      }
+
+      default: {
+        result = "unknown agent state";
+        break;
+      }
+    }
+    return result;
+  }
+
+  std::string endpointStateToString(const MavlinkEndpointState& state)
+  {
+    std::string result;
+    switch (state) {
+      case MavlinkEndpointState::CONNECTED: {
+        result = "connected";
+        break;
+      }
+
+      case MavlinkEndpointState::CONNECTING: {
+        result = "connecting";
+        break;
+      }
+
+      case MavlinkEndpointState::DISCONNECTED: {
+        result = "disconnected";
+        break;
+      }
+
+      case MavlinkEndpointState::DISCONNECTING: {
+        result = "disconnecting";
+        break;
+      }
+
+      default: {
+        result = "unknown endpoint state";
+        break;
+      }
+    }
+    return result;
+  }
+
+  //--------------------------------------------------------------------------------------------------------------------------------------------
+
   std::optional<UserPlan> fstreamToUserPlan(std::ifstream& json_fstream)
   {
     json plan_json;
@@ -166,33 +234,97 @@ namespace pendarlab::app::mavlink_hub
     return jsonToUserPlan(plan_json);
   }
 
-  std::string executionResultListToString(const ExecutionResultList& list){
+  std::string executionResultListToJsonString(const ExecutionResultList& list)
+  {
     json execution_result;
 
-    execution_result["endpoint_list"] = json{json_array_arg};
-    for(const auto& [name, result] : list.endpoint_plan_result){
+    execution_result["endpoint_plan_result"] = json{ json_array_arg };
+    for (const auto& [name, result] : list.endpoint_plan_result) {
       json entry_result;
       entry_result["name"] = name;
       entry_result["success"] = result.success;
-      entry_result["messages"] = json{json_array_arg};
-      for(const auto& msg : result.messages){
+      entry_result["messages"] = json{ json_array_arg };
+      for (const auto& msg : result.messages) {
         entry_result["messages"].push_back(msg);
       }
-      execution_result["endpoint_list"].push_back(entry_result);
+      execution_result["endpoint_plan_result"].push_back(entry_result);
     }
-    
-    execution_result["agent_list"] = json{json_array_arg};
-    for(const auto& [name, result] : list.agent_plan_result){
+
+    execution_result["agent_plan_result"] = json{ json_array_arg };
+    for (const auto& [name, result] : list.agent_plan_result) {
       json entry_result;
       entry_result["name"] = name;
       entry_result["success"] = result.success;
-      entry_result["messages"] = json{json_array_arg};
-      for(const auto& msg : result.messages){
+      entry_result["messages"] = json{ json_array_arg };
+      for (const auto& msg : result.messages) {
         entry_result["messages"].push_back(msg);
       }
-      execution_result["agent_list"].push_back(entry_result);
+      execution_result["agent_plan_result"].push_back(entry_result);
     }
 
     return execution_result.as_string();
+  }
+
+  json vectorOfStringToJson(const std::vector<std::string>& list)
+  {
+    json j_vec{ json_array_arg };
+    for (const auto& str : list) {
+      j_vec.push_back(str);
+    }
+    return j_vec;
+  }
+
+  std::string agentListToJsonString(const std::vector<std::string>& list)
+  {
+    json j_agent_list;
+    j_agent_list["agent_list"] = vectorOfStringToJson(list);
+    return j_agent_list.as_string();
+  }
+
+  std::string endpointListToJsonString(const std::vector<std::string>& list)
+  {
+    json j_endpoint_list;
+    j_endpoint_list["endpoint_list"] = vectorOfStringToJson(list);
+    return j_endpoint_list.as_string();
+  }
+
+  std::string agentStatusToJsonString(const pendarlab::sdk::mavlink_hub::AgentState& state)
+  {
+    json j_res;
+    j_res["agent_status"] = agentStateToString(state);
+    return j_res.as_string();
+  }
+
+  std::string endpointStatusToJsonString(const pendarlab::lib::comm::MavlinkEndpointState& state)
+  {
+    json j_res;
+    j_res["endpoint_status"] = endpointStateToString(state);
+    return j_res.as_string();
+  }
+
+  std::string agentStatusListToJsonString(const std::unordered_map<std::string, pendarlab::sdk::mavlink_hub::AgentState>& list)
+  {
+    json j_res;
+    j_res["agent_status_list"] = json{json_array_arg};
+    for (const auto& [name, status]: list){
+      json j_entry;
+      j_entry["name"] = name;
+      j_entry["status"] = status;
+      j_res["agent_status_list"].push_back(j_entry);
+    }
+    return j_res.as_string();
+  }
+
+  std::string endpointStatusListToJsonString(const std::unordered_map<std::string, pendarlab::lib::comm::MavlinkEndpointState>& list)
+  {
+    json j_res;
+    j_res["endpoint_status_list"] = json{json_array_arg};
+    for (const auto& [name, status]: list){
+      json j_entry;
+      j_entry["name"] = name;
+      j_entry["status"] = status;
+      j_res["endpoint_status_list"].push_back(j_entry);
+    }
+    return j_res.as_string();
   }
 } // namespace pendarlab::app::mavlink_hub

@@ -76,7 +76,7 @@ namespace pendarlab::app::mavlink_hub
           auto execute_result = d->manager.validatePlan(d->current_plan.value());
           result.success = true;
           result.message.push_back("[AppService]: The current plan has been checked and the detailed report has been produced.");
-          result.data = executionResultListToString(execute_result);
+          result.data = executionResultListToJsonString(execute_result);
         } else {
           result.success = false;
           result.message.push_back("[AppService]: Plan is not checked because there is no plan loaded");
@@ -89,7 +89,7 @@ namespace pendarlab::app::mavlink_hub
           auto execute_result = d->manager.executePlan(d->current_plan.value());
           result.success = true;
           result.message.push_back("[AppService]: The current plan is applied and the detailed report has been produced.");
-          result.data = executionResultListToString(execute_result);
+          result.data = executionResultListToJsonString(execute_result);
         } else {
           result.success = false;
           result.message.push_back("[AppService]: Plan is not applied because there is no plan loaded");
