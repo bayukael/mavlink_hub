@@ -5,7 +5,7 @@
 #include "app/app_service/AppService.h"
 #include "app/lib_loader/LibLoader.h"
 #include "app/shutdown_controller/ShutdownController.h"
-#include "app/startup/StartupArgsParser.h"
+#include "app/startup/ArgsParser.h"
 #include "app/ui_handler/CliUiHandler.h"
 #include "common/types/OperationResult.h"
 #include "manager/Manager.h"
