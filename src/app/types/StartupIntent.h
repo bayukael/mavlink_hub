@@ -8,8 +8,6 @@
 namespace pendarlab::app::mavlink_hub
 {
   struct StartupIntent {
-    AppConfig app_config;
-    std::optional<UserPlan> plan;
-    bool apply_plan_on_load = false;
+    std::string config_file_path;
   };
 } // namespace pendarlab::app::mavlink_hub

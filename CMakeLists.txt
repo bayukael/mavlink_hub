@@ -89,6 +89,7 @@ add_library(MavlinkHubStartupArgsParser SHARED
 target_include_directories(MavlinkHubStartupArgsParser PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/cli11-2.7.2/include>
 )
 target_link_libraries(MavlinkHubStartupArgsParser
     PUBLIC pendarlab::MavlinkHubSdk
