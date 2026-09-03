@@ -84,7 +84,6 @@ set_target_properties(MavlinkHubShutdownController PROPERTIES OUTPUT_NAME pendar
 ##############################################################################
 add_library(MavlinkHubStartupArgsParser SHARED
   src/app/startup/ArgsParser.cpp
-  src/app/startup/OptionRegistry.cpp
 )
 target_include_directories(MavlinkHubStartupArgsParser PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 

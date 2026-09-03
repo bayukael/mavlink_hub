@@ -8,11 +8,11 @@
 #include <string>
 #include <system_error>
 
-namespace pendarlab::app::mavlink_hub
+namespace pendarlab::app::mavlink_hub::startup
 {
-  std::optional<StartupIntent> startup::parseArgs(int argc, char** argv)
+  std::optional<Intent> parseArgs(int argc, char** argv)
   {
-    StartupIntent intent;
+    Intent intent;
     CLI::App app{
       "mavlink_hub is a tool that connects endpoints that uses Mavlink to agents (not AI agent!) so that agents can send and receive "
       "mavlink messages via endpoints."
