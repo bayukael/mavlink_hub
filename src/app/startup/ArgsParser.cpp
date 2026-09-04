@@ -10,9 +10,8 @@
 
 namespace pendarlab::app::mavlink_hub::startup
 {
-  std::optional<Intent> parseArgs(int argc, char** argv)
+  std::optional<Intent> parseArgs(int argc, char** argv, Intent intent)
   {
-    Intent intent;
     CLI::App app{
       "mavlink_hub is a tool that connects endpoints that uses Mavlink to agents (not AI agent!) so that agents can send and receive "
       "mavlink messages via endpoints."

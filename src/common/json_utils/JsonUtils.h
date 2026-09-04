@@ -2,6 +2,7 @@
 
 #include "manager/types/ExecutionResultList.h"
 #include "manager/types/UserPlan.h"
+#include "app/types/AppConfig.h"
 
 #include <fstream>
 #include <mavlink_endpoint/MavlinkEndpointState.h>
@@ -12,6 +13,7 @@
 
 namespace pendarlab::app::mavlink_hub::json_utils
 {
+  std::optional<AppConfig> fstreamToAppConfig(std::ifstream& json_fstream);
   std::optional<UserPlan> fstreamToUserPlan(std::ifstream& json_fstream);
   std::optional<UserPlan> stringToUserPlan(const std::string& json_str);
   std::string executionResultListToJsonString(const ExecutionResultList& list);
