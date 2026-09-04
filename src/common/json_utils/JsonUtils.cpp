@@ -101,51 +101,44 @@ namespace pendarlab::app::mavlink_hub::json_utils
     return agent_list;
   }
 
+  std::optional<std::unordered_map<std::string, LibInfo>> jsonToLibList(const json& lib_list_json)
+  {
+    std::unordered_map<std::string, LibInfo> lib_list;
+    if (!lib_list_json.is_array()) {
+      return std::nullopt;
+    }
+    for (const auto& lib_entry : lib_list_json.array_range()) {
+      if (!lib_entry.contains("name") || !lib_entry.contains("path") || !lib_entry.contains("sym")) {
+        return std::nullopt;
+      }
+      LibInfo lib_info{ lib_entry["name"].as_string(), lib_entry["path"].as_string(), lib_entry["sym"].as_string() };
+
+      if (lib_list.find(lib_info.name) != lib_list.end()) {
+        // Duplicate entry found -> Do not process further
+        return std::nullopt;
+      }
+      lib_list[lib_info.name] = lib_info;
+    }
+    return lib_list;
+  }
+
   std::optional<AppConfig> jsonToAppConfig(const json& app_cfg_json)
   {
     AppConfig app_cfg;
     if (app_cfg_json.contains("agent_lib_list")) {
-      if(!app_cfg_json["agent_lib_list"].is_array()){ // User must put an array in this field
+      auto lib_list = jsonToLibList(app_cfg_json["agent_lib_list"]);
+      if(!lib_list.has_value()){
         return std::nullopt;
       }
-      for (const auto& agent_lib_entry : app_cfg_json["agent_lib_list"].array_range()){
-        if( !agent_lib_entry.contains("name") || !agent_lib_entry.contains("path") || !agent_lib_entry.contains("sym")){
-          return std::nullopt;
-        }
-        LibInfo lib_info{
-          agent_lib_entry["name"].as_string(),
-          agent_lib_entry["path"].as_string(),
-          agent_lib_entry["sym"].as_string()
-        };
-
-        if( app_cfg.agent_lib_list.find(lib_info.name) != app_cfg.agent_lib_list.end() ){
-          // Duplicate entry found -> Do not process further
-          return std::nullopt;
-        }
-        app_cfg.agent_lib_list[lib_info.name] = lib_info;
-      }
+      app_cfg.agent_lib_list = lib_list.value();
     }
 
     if (app_cfg_json.contains("transport_lib_list")) {
-      if(!app_cfg_json["transport_lib_list"].is_array()){ // User must put an array in this field
+      auto lib_list = jsonToLibList(app_cfg_json["transport_lib_list"]);
+      if(!lib_list.has_value()){
         return std::nullopt;
       }
-      for (const auto& transport_lib_entry : app_cfg_json["transport_lib_list"].array_range()){
-        if( !transport_lib_entry.contains("name") || !transport_lib_entry.contains("path") || !transport_lib_entry.contains("sym")){
-          return std::nullopt;
-        }
-        LibInfo lib_info{
-          transport_lib_entry["name"].as_string(),
-          transport_lib_entry["path"].as_string(),
-          transport_lib_entry["sym"].as_string()
-        };
-
-        if( app_cfg.transport_lib_list.find(lib_info.name) != app_cfg.transport_lib_list.end() ){
-          // Duplicate entry found -> Do not process further
-          return std::nullopt;
-        }
-        app_cfg.transport_lib_list[lib_info.name] = lib_info;
-      }
+      app_cfg.transport_lib_list = lib_list.value();
     }
 
     if (app_cfg_json.contains("path_to_extra_lib_list")) {
