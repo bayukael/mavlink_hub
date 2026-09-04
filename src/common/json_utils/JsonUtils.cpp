@@ -117,6 +117,11 @@ namespace pendarlab::app::mavlink_hub::json_utils
           agent_lib_entry["path"].as_string(),
           agent_lib_entry["sym"].as_string()
         };
+
+        if( app_cfg.agent_lib_list.find(lib_info.name) != app_cfg.agent_lib_list.end() ){
+          // Duplicate entry found -> Do not process further
+          return std::nullopt;
+        }
         app_cfg.agent_lib_list[lib_info.name] = lib_info;
       }
     }
@@ -134,6 +139,11 @@ namespace pendarlab::app::mavlink_hub::json_utils
           transport_lib_entry["path"].as_string(),
           transport_lib_entry["sym"].as_string()
         };
+
+        if( app_cfg.transport_lib_list.find(lib_info.name) != app_cfg.transport_lib_list.end() ){
+          // Duplicate entry found -> Do not process further
+          return std::nullopt;
+        }
         app_cfg.transport_lib_list[lib_info.name] = lib_info;
       }
     }
