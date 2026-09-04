@@ -1,5 +1,7 @@
 #include "app/lib_loader/LibLoader.h"
 
+#include "app/lib_loader/LibInfo.h"
+
 #include <dlfcn.h>
 #include <mavlink_hub_sdk/agent/AgentDefinition.h>
 #include <unordered_map>
@@ -143,6 +145,14 @@ namespace pendarlab::app::mavlink_hub
     result.merge(good_result);
 
     return result;
+  }
+
+  OperationResult LibLoader::loadAgentLib(const LibInfo& lib_info){
+    return loadAgentLib(lib_info.name, lib_info.path, lib_info.sym);
+  }
+
+  OperationResult LibLoader::loadTransportLib(const LibInfo& lib_info){
+    return loadTransportLib(lib_info.name, lib_info.path, lib_info.sym);
   }
 
 } // namespace pendarlab::app::mavlink_hub
