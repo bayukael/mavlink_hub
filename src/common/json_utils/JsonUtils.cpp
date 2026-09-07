@@ -264,6 +264,17 @@ namespace pendarlab::app::mavlink_hub::json_utils
 
   //--------------------------------------------------------------------------------------------------------------------------------------------
 
+  std::optional<LibList> fstreamToLibList(std::ifstream& json_fstream){
+    json lib_list_json;
+    try {
+      lib_list_json = json::parse(json_fstream);
+    } catch (const ser_error& e) {
+      return std::nullopt;
+    }
+
+    return jsonToLibList(lib_list_json);
+  }
+
   std::optional<AppConfig> fstreamToAppConfig(std::ifstream& json_fstream)
   {
     json app_config_json;
