@@ -4,6 +4,7 @@
 #include "manager/types/MavlinkEndpointEntry.h"
 
 #include <jsoncons/json.hpp>
+#include <filesystem>
 
 using namespace jsoncons;
 using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
@@ -142,11 +143,17 @@ namespace pendarlab::app::mavlink_hub::json_utils
     }
 
     if (app_cfg_json.contains("path_to_extra_lib_list")) {
-      app_cfg.path_to_extra_lib_list = app_cfg_json["path_to_extra_lib_list"].as_string();
+      std::string path_to_extra_lib_list = app_cfg_json["path_to_extra_lib_list"].as_string();
+      app_cfg.path_to_extra_lib_list = std::filesystem::weakly_canonical(path_to_extra_lib_list).string();
     }
 
     if (app_cfg_json.contains("path_to_startup_user_plan")) {
-      app_cfg.path_to_startup_user_plan = app_cfg_json["path_to_startup_user_plan"].as_string();
+      std::string path_to_startup_user_plan = app_cfg_json["path_to_startup_user_plan"].as_string();
+      app_cfg.path_to_startup_user_plan = std::filesystem::weakly_canonical(path_to_startup_user_plan).string();
+    }
+
+    if (app_cfg_json.contains("apply_user_plan_on_startup")){
+      app_cfg.apply_user_plan_on_startup = app_cfg_json["apply_user_plan_on_startup"].as_bool();
     }
 
     return app_cfg;
