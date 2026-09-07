@@ -101,9 +101,9 @@ namespace pendarlab::app::mavlink_hub::json_utils
     return agent_list;
   }
 
-  std::optional<std::unordered_map<std::string, LibInfo>> jsonToLibList(const json& lib_list_json)
+  std::optional<LibList> jsonToLibList(const json& lib_list_json)
   {
-    std::unordered_map<std::string, LibInfo> lib_list;
+    LibList lib_list;
     if (!lib_list_json.is_array()) {
       return std::nullopt;
     }
