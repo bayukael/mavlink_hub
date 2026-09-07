@@ -12,5 +12,6 @@ namespace pendarlab::app::mavlink_hub
     std::unordered_map<std::string, LibInfo> transport_lib_list;
     std::string path_to_extra_lib_list;
     std::string path_to_startup_user_plan;
+    bool apply_user_plan_on_startup;
   };
 } // namespace pendarlab::app::mavlink_hub
