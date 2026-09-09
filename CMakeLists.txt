@@ -349,7 +349,7 @@ target_compile_definitions(MavlinkHubJsonUtilsTest
 )
 
 ##############################################################################
-#################### #    StartupAppConfigurator Test     ####################
+#####################     StartupAppConfigurator Test     ####################
 ##############################################################################
 add_executable(MavlinkHubStartupAppConfiguratorTest
   test/app/startup/app_configurator_test.cpp
@@ -388,7 +388,7 @@ target_compile_definitions(MavlinkHubStartupArgsParserTest
 )
 
 ##############################################################################
-##########################     App Service Test     ###########################
+##########################     App Service Test     ##########################
 ##############################################################################
 add_executable(MavlinkHubAppServiceTest
   test/app/app_service/app_service_test.cpp
