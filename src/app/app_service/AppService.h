@@ -1,6 +1,7 @@
 #pragma once
 
-#include "app/lib_loader/LibLoader.h"
+#include "app/app_service/IAppService.h"
+#include "app/lib_loader/ILibLoader.h"
 #include "app/types/CommandResult.h"
 #include "app/types/UserCommand.h"
 #include "manager/IManager.h"
@@ -9,15 +10,15 @@
 
 namespace pendarlab::app::mavlink_hub
 {
-  class AppService
+  class AppService : public IAppService
   {
   public:
-    AppService(IManager& mgr, LibLoader& lib_loader);
+    AppService(IManager& mgr, ILibLoader& lib_loader);
     ~AppService();
     AppService(AppService&&) noexcept;
     AppService& operator=(AppService&&) noexcept;
 
-    virtual CommandResult executeCommand(const UserCommand& cmd);
+    CommandResult executeCommand(const UserCommand& cmd) override;
 
   private:
     struct AppServiceImpl;
