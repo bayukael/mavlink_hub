@@ -5,6 +5,7 @@
 #include "app/app_service/AppService.h"
 #include "app/lib_loader/LibLoader.h"
 #include "app/shutdown_controller/ShutdownController.h"
+#include "app/startup/AppConfigurator.h"
 #include "app/startup/ArgsParser.h"
 #include "app/types/AppConfig.h"
 #include "app/ui_handler/CliUiHandler.h"
@@ -80,6 +81,10 @@ namespace pendarlab::app::mavlink_hub
       app_result.messages.push_back("[App]: Failed to parse the given config");
       return app_result;
     }
+    AppConfig& app_config = app_config_opt.value();
+
+    OperationResult configure_result = startup::applyConfig(app_config, d->lib_loader, d->app_service);
+    app_result.merge(configure_result);
 
     d->cli_handler.start();
     // HttpRequestHandler also?

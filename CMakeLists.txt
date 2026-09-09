@@ -96,6 +96,22 @@ target_link_libraries(MavlinkHubStartupArgsParser
 set_target_properties(MavlinkHubStartupArgsParser PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_startup_args_parser)
 
 ##############################################################################
+########################     StartupAppConfigurator    #######################
+##############################################################################
+add_library(MavlinkHubStartupAppConfigurator SHARED
+  src/app/startup/AppConfigurator.cpp
+)
+target_include_directories(MavlinkHubStartupAppConfigurator PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubStartupAppConfigurator
+    PUBLIC MavlinkHubJsonUtils
+    PUBLIC pendarlab::MavlinkHubSdk
+)
+set_target_properties(MavlinkHubStartupAppConfigurator PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_startup_app_configurator)
+
+##############################################################################
 ############################     CliUiHandler     ############################
 ##############################################################################
 add_library(MavlinkHubCliUiHandler SHARED
@@ -176,6 +192,7 @@ target_link_libraries(MavlinkHubApp
   PUBLIC MavlinkHubManager
   PUBLIC MavlinkHubShutdownController
   PUBLIC MavlinkHubStartupArgsParser
+  PUBLIC MavlinkHubStartupAppConfigurator
   PUBLIC MavlinkHubCliUiHandler
   PUBLIC MavlinkHubAppService
   PUBLIC pendarlab::MavlinkHubSdk
