@@ -60,17 +60,6 @@ namespace pendarlab::app::mavlink_hub
 
   int App::run()
   {
-    /*
-    parse_args (or name the function something else) to get AppConfig. Might throw if there are:
-      - cli-parsing error
-      - option-checking error (config option gives a non-existant path, etc)
-      - json-parsing error
-
-    cli-parsing converts Args to ArgsOption (gives the path to the config file)
-    ArgsOption processor generates AppConfig? (given the path to config file, read and parse it to AppConfig)
-    AppConfig processor loads libs, user plan, and apply
-    */
-
     startup::ParseResult parse_result = startup::parseArgs(d->argc, d->argv);
     if (parse_result.status == startup::ParseResult::Status::ShowHelp) {
       return parse_result.exit_code;
