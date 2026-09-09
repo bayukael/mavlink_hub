@@ -348,6 +348,26 @@ target_compile_definitions(MavlinkHubJsonUtilsTest
 )
 
 ##############################################################################
+#################### #    StartupAppConfigurator Test     ####################
+##############################################################################
+add_executable(MavlinkHubStartupAppConfiguratorTest
+  test/app/startup/app_configurator_test.cpp
+)
+target_include_directories(MavlinkHubStartupAppConfiguratorTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+target_link_libraries(MavlinkHubStartupAppConfiguratorTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubStartupAppConfigurator
+  PRIVATE MavlinkHubMockLibLoader
+  PRIVATE MavlinkHubMockAppService
+)
+target_compile_definitions(MavlinkHubStartupAppConfiguratorTest
+  PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/app/startup/"
+)
+
+##############################################################################
 ##########################     App Service Test     ###########################
 ##############################################################################
 add_executable(MavlinkHubAppServiceTest
