@@ -1,6 +1,5 @@
 #pragma once
 
-#include "app/startup/Intent.h"
 #include "app/types/AppConfig.h"
 
 #include <optional>
