@@ -319,3 +319,13 @@ target_include_directories(MavlinkHubAppServiceTest PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
 )
 
+##############################################################################
+##############################     App Test     ##############################
+##############################################################################
+add_executable(MavlinkHubAppTest
+  test/app/app_test.cpp
+)
+target_include_directories(MavlinkHubAppTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+
