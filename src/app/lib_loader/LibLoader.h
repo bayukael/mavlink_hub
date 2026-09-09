@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/lib_loader/ILibLoader.h"
 #include "app/lib_loader/LibInfo.h"
 #include "agent_registry/AgentRegistryAdminAccess.h"
 #include "common/types/OperationResult.h"
@@ -10,7 +11,7 @@
 
 namespace pendarlab::app::mavlink_hub
 {
-  class LibLoader
+  class LibLoader : public ILibLoader
   {
     using TransportRegistryAdminAccess = pendarlab::lib::comm::byte_transport::RegistryAdminAccess;
 
@@ -22,8 +23,8 @@ namespace pendarlab::app::mavlink_hub
 
     OperationResult loadAgentLib(const std::string& agent_def_name, const std::string& lib_path, const std::string& sym);
     OperationResult loadTransportLib(const std::string& transport_def_name, const std::string& lib_path, const std::string& sym);
-    OperationResult loadAgentLib(const LibInfo& lib_info);
-    OperationResult loadTransportLib(const LibInfo& lib_info);
+    OperationResult loadAgentLib(const LibInfo& lib_info) override;
+    OperationResult loadTransportLib(const LibInfo& lib_info) override;
 
   private:
     struct LibLoaderImpl;
