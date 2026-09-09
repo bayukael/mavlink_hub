@@ -244,6 +244,28 @@ target_link_libraries(MavlinkHubMockByteTransport
   PRIVATE pendarlab::ByteTransport
 )
 
+##############################################################################
+########################     MockLibLoader    ################################
+##############################################################################
+add_library(MavlinkHubMockLibLoader INTERFACE)
+target_include_directories(MavlinkHubMockLibLoader INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+)
+target_link_libraries(MavlinkHubMockLibLoader
+  INTERFACE MavlinkHubLibLoader
+)
+
+##############################################################################
+########################     MockAppService    ###############################
+##############################################################################
+add_library(MavlinkHubMockAppService INTERFACE)
+target_include_directories(MavlinkHubMockAppService INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+)
+target_link_libraries(MavlinkHubMockAppService
+  INTERFACE MavlinkHubAppService
+)
+
 
 ##############################################################################
 #########################     AgentRegistry Test    ##########################
