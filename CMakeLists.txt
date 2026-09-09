@@ -92,6 +92,7 @@ target_include_directories(MavlinkHubStartupArgsParser PUBLIC
 )
 target_link_libraries(MavlinkHubStartupArgsParser
     PUBLIC pendarlab::MavlinkHubSdk
+    PUBLIC MavlinkHubJsonUtils
 )
 set_target_properties(MavlinkHubStartupArgsParser PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_startup_args_parser)
 

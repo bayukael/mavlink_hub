@@ -5,13 +5,16 @@
 
 #include <cli11/CLI11.hpp>
 #include <filesystem>
+#include <fstream>
 #include <optional>
 #include <string>
 #include <system_error>
 
 namespace pendarlab::app::mavlink_hub::startup
 {
-  std::optional<AppConfig> parseArgs(int argc, char** argv)
+  constexpr int kFatalErrorExitCode = 1;
+
+  ParseResult parseArgs(int argc, char** argv)
   {
     std::string config_file_path;
     CLI::App app{
@@ -25,29 +28,45 @@ namespace pendarlab::app::mavlink_hub::startup
     try {
       app.parse(argc, argv);
     } catch (const CLI::ParseError& e) {
-      return std::nullopt;
+      ParseResult result;
+      result.status = ParseResult::Status::ShowHelp;
+      result.exit_code = app.exit(e);
+      return result;
     }
 
     AppConfig app_cfg;
-    if(!config_file_path.empty()){
+    if (!config_file_path.empty()) {
       std::error_code ec;
       std::string canonical_config_file_path = std::filesystem::canonical(config_file_path, ec);
-      if(ec){
-        return std::nullopt;
+      if (ec) {
+        ParseResult result;
+        result.status = ParseResult::Status::FatalError;
+        result.exit_code = kFatalErrorExitCode;
+        return result;
       }
 
       std::ifstream cfg_stream(canonical_config_file_path);
       if (!cfg_stream.is_open()) {
-        return std::nullopt;
+        ParseResult result;
+        result.status = ParseResult::Status::FatalError;
+        result.exit_code = kFatalErrorExitCode;
+        return result;
       }
 
       std::optional<AppConfig> processed_cfg = json_utils::fstreamToAppConfig(cfg_stream);
       if (!processed_cfg.has_value()) {
-        return std::nullopt;
+        ParseResult result;
+        result.status = ParseResult::Status::FatalError;
+        result.exit_code = kFatalErrorExitCode;
+        return result;
       }
       app_cfg = processed_cfg.value();
     }
-    return app_cfg;
+
+    ParseResult result;
+    result.status = ParseResult::Status::Ok;
+    result.config = app_cfg;
+    return result;
   }
 
 } // namespace pendarlab::app::mavlink_hub::startup

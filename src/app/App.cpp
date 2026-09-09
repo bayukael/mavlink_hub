@@ -9,13 +9,11 @@
 #include "app/startup/ArgsParser.h"
 #include "app/types/AppConfig.h"
 #include "app/ui_handler/CliUiHandler.h"
-#include "common/types/OperationResult.h"
 #include "manager/Manager.h"
 
 #include <byte_transport/Registry.h>
 #include <byte_transport/RegistryUser.h>
 #include <memory>
-#include <optional>
 
 namespace pendarlab::app::mavlink_hub
 {
@@ -60,10 +58,8 @@ namespace pendarlab::app::mavlink_hub
   App::App(App&&) noexcept = default;
   App& App::operator=(App&&) noexcept = default;
 
-  OperationResult App::run()
+  int App::run()
   {
-    OperationResult app_result;
-
     /*
     parse_args (or name the function something else) to get AppConfig. Might throw if there are:
       - cli-parsing error
@@ -75,16 +71,15 @@ namespace pendarlab::app::mavlink_hub
     AppConfig processor loads libs, user plan, and apply
     */
 
-    std::optional<AppConfig> app_config_opt = startup::parseArgs(d->argc, d->argv);
-    if (!app_config_opt.has_value()) {
-      app_result.success = false;
-      app_result.messages.push_back("[App]: Failed to parse the given config");
-      return app_result;
+    startup::ParseResult parse_result = startup::parseArgs(d->argc, d->argv);
+    if (parse_result.status == startup::ParseResult::Status::ShowHelp) {
+      return parse_result.exit_code;
     }
-    AppConfig& app_config = app_config_opt.value();
+    if (parse_result.status == startup::ParseResult::Status::FatalError) {
+      return parse_result.exit_code;
+    }
 
-    OperationResult configure_result = startup::applyConfig(app_config, d->lib_loader, d->app_service);
-    app_result.merge(configure_result);
+    startup::applyConfig(parse_result.config.value(), d->lib_loader, d->app_service);
 
     d->cli_handler.start();
     // HttpRequestHandler also?
@@ -94,9 +89,6 @@ namespace pendarlab::app::mavlink_hub
     d->cli_handler.stop();
     // HttpRequestHandler also?
 
-    app_result.merge(d->cli_handler.getResult());
-    // HttpRequestHandler also?
-
-    return app_result;
+    return 0;
   }
 } // namespace pendarlab::app::mavlink_hub

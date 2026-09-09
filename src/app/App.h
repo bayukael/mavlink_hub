@@ -1,7 +1,5 @@
 #pragma once
 
-#include "common/types/OperationResult.h"
-
 #include <memory>
 
 namespace pendarlab::app::mavlink_hub
@@ -14,7 +12,7 @@ namespace pendarlab::app::mavlink_hub
     App(App&&) noexcept;
     App& operator=(App&&) noexcept;
 
-    OperationResult run();
+    int run();
 
   private:
     struct AppImpl;
