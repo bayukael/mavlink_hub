@@ -1,0 +1,16 @@
+{
+  "agent_lib_list": [
+    {
+      "name": "mock_agent",
+      "path": "/path/to/mock_agent.so",
+      "sym": "getMockAgentDefinition"
+    }
+  ],
+  "transport_lib_list": [
+    {
+      "name": "mock_transport",
+      "path": "/path/to/mock_transport.so",
+      "sym": "getMockTransportDefinition"
+    }
+  ]
+}

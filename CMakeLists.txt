@@ -369,6 +369,25 @@ target_compile_definitions(MavlinkHubStartupAppConfiguratorTest
 )
 
 ##############################################################################
+#######################     StartupArgsParser Test     #######################
+##############################################################################
+add_executable(MavlinkHubStartupArgsParserTest
+  test/app/startup/args_parser_test.cpp
+)
+target_include_directories(MavlinkHubStartupArgsParserTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/cli11-2.7.2/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+target_link_libraries(MavlinkHubStartupArgsParserTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubStartupArgsParser
+)
+target_compile_definitions(MavlinkHubStartupArgsParserTest
+  PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/app/startup/"
+)
+
+##############################################################################
 ##########################     App Service Test     ###########################
 ##############################################################################
 add_executable(MavlinkHubAppServiceTest
