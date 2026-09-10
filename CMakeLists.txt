@@ -83,16 +83,34 @@ set_target_properties(MavlinkHubShutdownController PROPERTIES OUTPUT_NAME pendar
 #########################     StartupArgsParser    #########################
 ##############################################################################
 add_library(MavlinkHubStartupArgsParser SHARED
-  src/app/startup/StartupArgsParser.cpp
+  src/app/startup/ArgsParser.cpp
 )
 target_include_directories(MavlinkHubStartupArgsParser PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/cli11-2.7.2/include>
 )
 target_link_libraries(MavlinkHubStartupArgsParser
     PUBLIC pendarlab::MavlinkHubSdk
+    PUBLIC MavlinkHubJsonUtils
 )
 set_target_properties(MavlinkHubStartupArgsParser PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_startup_args_parser)
+
+##############################################################################
+########################     StartupAppConfigurator    #######################
+##############################################################################
+add_library(MavlinkHubStartupAppConfigurator SHARED
+  src/app/startup/AppConfigurator.cpp
+)
+target_include_directories(MavlinkHubStartupAppConfigurator PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubStartupAppConfigurator
+    PUBLIC MavlinkHubJsonUtils
+    PUBLIC pendarlab::MavlinkHubSdk
+)
+set_target_properties(MavlinkHubStartupAppConfigurator PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_startup_app_configurator)
 
 ##############################################################################
 ############################     CliUiHandler     ############################
@@ -175,6 +193,7 @@ target_link_libraries(MavlinkHubApp
   PUBLIC MavlinkHubManager
   PUBLIC MavlinkHubShutdownController
   PUBLIC MavlinkHubStartupArgsParser
+  PUBLIC MavlinkHubStartupAppConfigurator
   PUBLIC MavlinkHubCliUiHandler
   PUBLIC MavlinkHubAppService
   PUBLIC pendarlab::MavlinkHubSdk
@@ -224,6 +243,28 @@ target_include_directories(MavlinkHubMockByteTransport PUBLIC
 )
 target_link_libraries(MavlinkHubMockByteTransport
   PRIVATE pendarlab::ByteTransport
+)
+
+##############################################################################
+########################     MockLibLoader    ################################
+##############################################################################
+add_library(MavlinkHubMockLibLoader INTERFACE)
+target_include_directories(MavlinkHubMockLibLoader INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+)
+target_link_libraries(MavlinkHubMockLibLoader
+  INTERFACE MavlinkHubLibLoader
+)
+
+##############################################################################
+########################     MockAppService    ###############################
+##############################################################################
+add_library(MavlinkHubMockAppService INTERFACE)
+target_include_directories(MavlinkHubMockAppService INTERFACE 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+)
+target_link_libraries(MavlinkHubMockAppService
+  INTERFACE MavlinkHubAppService
 )
 
 
@@ -308,7 +349,46 @@ target_compile_definitions(MavlinkHubJsonUtilsTest
 )
 
 ##############################################################################
-##########################     App Service Test     ###########################
+#####################     StartupAppConfigurator Test     ####################
+##############################################################################
+add_executable(MavlinkHubStartupAppConfiguratorTest
+  test/app/startup/app_configurator_test.cpp
+)
+target_include_directories(MavlinkHubStartupAppConfiguratorTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+target_link_libraries(MavlinkHubStartupAppConfiguratorTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubStartupAppConfigurator
+  PRIVATE MavlinkHubMockLibLoader
+  PRIVATE MavlinkHubMockAppService
+)
+target_compile_definitions(MavlinkHubStartupAppConfiguratorTest
+  PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/app/startup/"
+)
+
+##############################################################################
+#######################     StartupArgsParser Test     #######################
+##############################################################################
+add_executable(MavlinkHubStartupArgsParserTest
+  test/app/startup/args_parser_test.cpp
+)
+target_include_directories(MavlinkHubStartupArgsParserTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/cli11-2.7.2/include>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+target_link_libraries(MavlinkHubStartupArgsParserTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubStartupArgsParser
+)
+target_compile_definitions(MavlinkHubStartupArgsParserTest
+  PRIVATE TEST_DATA_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/app/startup/"
+)
+
+##############################################################################
+##########################     App Service Test     ##########################
 ##############################################################################
 add_executable(MavlinkHubAppServiceTest
   test/app/app_service/app_service_test.cpp
@@ -316,5 +396,15 @@ add_executable(MavlinkHubAppServiceTest
 target_include_directories(MavlinkHubAppServiceTest PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+
+##############################################################################
+##############################     App Test     ##############################
+##############################################################################
+add_executable(MavlinkHubAppTest
+  test/app/app_test.cpp
+)
+target_include_directories(MavlinkHubAppTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
 )
 

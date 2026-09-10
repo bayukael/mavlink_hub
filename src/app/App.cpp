@@ -5,9 +5,10 @@
 #include "app/app_service/AppService.h"
 #include "app/lib_loader/LibLoader.h"
 #include "app/shutdown_controller/ShutdownController.h"
-#include "app/startup/StartupArgsParser.h"
+#include "app/startup/AppConfigurator.h"
+#include "app/startup/ArgsParser.h"
+#include "app/types/AppConfig.h"
 #include "app/ui_handler/CliUiHandler.h"
-#include "common/types/OperationResult.h"
 #include "manager/Manager.h"
 
 #include <byte_transport/Registry.h>
@@ -28,7 +29,6 @@ namespace pendarlab::app::mavlink_hub
     TransportRegistry transport_registry;
     std::unique_ptr<TransportRegistryUserAccess> transport_registry_user;
     LibLoader lib_loader;
-    OperationResult app_result;
     ShutdownController shutdown_controller;
     Manager manager;
     AppService app_service;
@@ -58,18 +58,17 @@ namespace pendarlab::app::mavlink_hub
   App::App(App&&) noexcept = default;
   App& App::operator=(App&&) noexcept = default;
 
-  OperationResult App::run()
+  int App::run()
   {
-    OperationResult app_result;
+    startup::ParseResult parse_result = startup::parseArgs(d->argc, d->argv);
+    if (parse_result.status == startup::ParseResult::Status::ShowHelp) {
+      return parse_result.exit_code;
+    }
+    if (parse_result.status == startup::ParseResult::Status::FatalError) {
+      return parse_result.exit_code;
+    }
 
-    // startup::parseArgs(argc, argv) -> StartupIntent (StartupIntent struct)
-    // Get AppConfig contained in StartupIntent
-    // Iterate over files contained in agent_libs_dir_path in AppConfig, load libs using AppService
-    // Do the same for transport_libs_dir_path
-    // Remark: Now, agent_registry and transport_registry have contained all the default libs via LibLoader through AppService
-
-    // Is there a UserPlan in StartupIntent?
-    // --> If yes, pass the UserPlan into Manager via AppService
+    startup::applyConfig(parse_result.config.value(), d->lib_loader, d->app_service);
 
     d->cli_handler.start();
     // HttpRequestHandler also?
@@ -79,9 +78,6 @@ namespace pendarlab::app::mavlink_hub
     d->cli_handler.stop();
     // HttpRequestHandler also?
 
-    app_result.merge(d->cli_handler.getResult());
-    // HttpRequestHandler also?
-
-    return app_result;
+    return 0;
   }
 } // namespace pendarlab::app::mavlink_hub

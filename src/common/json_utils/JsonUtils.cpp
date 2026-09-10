@@ -1,8 +1,10 @@
 #include "common/json_utils/JsonUtils.h"
 
+#include "app/types/AppConfig.h"
 #include "manager/types/MavlinkEndpointEntry.h"
 
 #include <jsoncons/json.hpp>
+#include <filesystem>
 
 using namespace jsoncons;
 using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
@@ -98,6 +100,63 @@ namespace pendarlab::app::mavlink_hub::json_utils
       agent_list[name] = agent_entry;
     }
     return agent_list;
+  }
+
+  std::optional<LibList> jsonToLibList(const json& lib_list_json)
+  {
+    LibList lib_list;
+    if (!lib_list_json.is_array()) {
+      return std::nullopt;
+    }
+    for (const auto& lib_entry : lib_list_json.array_range()) {
+      if (!lib_entry.contains("name") || !lib_entry.contains("path") || !lib_entry.contains("sym")) {
+        return std::nullopt;
+      }
+      LibInfo lib_info{ lib_entry["name"].as_string(), lib_entry["path"].as_string(), lib_entry["sym"].as_string() };
+
+      if (lib_list.find(lib_info.name) != lib_list.end()) {
+        // Duplicate entry found -> Do not process further
+        return std::nullopt;
+      }
+      lib_list[lib_info.name] = lib_info;
+    }
+    return lib_list;
+  }
+
+  std::optional<AppConfig> jsonToAppConfig(const json& app_cfg_json)
+  {
+    AppConfig app_cfg;
+    if (app_cfg_json.contains("agent_lib_list")) {
+      auto lib_list = jsonToLibList(app_cfg_json["agent_lib_list"]);
+      if(!lib_list.has_value()){
+        return std::nullopt;
+      }
+      app_cfg.agent_lib_list = lib_list.value();
+    }
+
+    if (app_cfg_json.contains("transport_lib_list")) {
+      auto lib_list = jsonToLibList(app_cfg_json["transport_lib_list"]);
+      if(!lib_list.has_value()){
+        return std::nullopt;
+      }
+      app_cfg.transport_lib_list = lib_list.value();
+    }
+
+    if (app_cfg_json.contains("path_to_extra_lib_list")) {
+      std::string path_to_extra_lib_list = app_cfg_json["path_to_extra_lib_list"].as_string();
+      app_cfg.path_to_extra_lib_list = std::filesystem::weakly_canonical(path_to_extra_lib_list).string();
+    }
+
+    if (app_cfg_json.contains("path_to_startup_user_plan")) {
+      std::string path_to_startup_user_plan = app_cfg_json["path_to_startup_user_plan"].as_string();
+      app_cfg.path_to_startup_user_plan = std::filesystem::weakly_canonical(path_to_startup_user_plan).string();
+    }
+
+    if (app_cfg_json.contains("apply_user_plan_on_startup")){
+      app_cfg.apply_user_plan_on_startup = app_cfg_json["apply_user_plan_on_startup"].as_bool();
+    }
+
+    return app_cfg;
   }
 
   std::optional<UserPlan> jsonToUserPlan(const json& plan_json)
@@ -211,6 +270,29 @@ namespace pendarlab::app::mavlink_hub::json_utils
   }
 
   //--------------------------------------------------------------------------------------------------------------------------------------------
+
+  std::optional<LibList> fstreamToLibList(std::ifstream& json_fstream){
+    json lib_list_json;
+    try {
+      lib_list_json = json::parse(json_fstream);
+    } catch (const ser_error& e) {
+      return std::nullopt;
+    }
+
+    return jsonToLibList(lib_list_json);
+  }
+
+  std::optional<AppConfig> fstreamToAppConfig(std::ifstream& json_fstream)
+  {
+    json app_config_json;
+    try {
+      app_config_json = json::parse(json_fstream);
+    } catch (const ser_error& e) {
+      return std::nullopt;
+    }
+
+    return jsonToAppConfig(app_config_json);
+  }
 
   std::optional<UserPlan> fstreamToUserPlan(std::ifstream& json_fstream)
   {

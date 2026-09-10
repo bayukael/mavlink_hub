@@ -1,6 +1,6 @@
 #include "app/app_service/AppService.h"
 
-#include "app/lib_loader/LibLoader.h"
+#include "app/lib_loader/ILibLoader.h"
 #include "app/types/CommandResult.h"
 #include "app/types/UserCommandType.h"
 #include "common/json_utils/JsonUtils.h"
@@ -12,17 +12,17 @@
 namespace pendarlab::app::mavlink_hub
 {
   struct AppService::AppServiceImpl {
-    AppServiceImpl(IManager&, LibLoader&);
+    AppServiceImpl(IManager&, ILibLoader&);
     IManager& manager;
-    LibLoader& lib_loader;
+    ILibLoader& lib_loader;
     std::optional<UserPlan> current_plan;
   };
 
-  AppService::AppServiceImpl::AppServiceImpl(IManager& mgr, LibLoader& loader) : manager(mgr), lib_loader(loader)
+  AppService::AppServiceImpl::AppServiceImpl(IManager& mgr, ILibLoader& loader) : manager(mgr), lib_loader(loader)
   {
   }
 
-  AppService::AppService(IManager& mgr, LibLoader& loader) : d(std::make_unique<AppServiceImpl>(mgr, loader))
+  AppService::AppService(IManager& mgr, ILibLoader& loader) : d(std::make_unique<AppServiceImpl>(mgr, loader))
   {
   }
   AppService::~AppService()
