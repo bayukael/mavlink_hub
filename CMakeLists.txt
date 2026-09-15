@@ -12,6 +12,7 @@ set(MAVLINK_HEADER_DIR "" CACHE PATH "Path to mavlink header directory")
 find_package(GTest CONFIG REQUIRED)
 find_package(PendarlabMavlinkHubSdk REQUIRED)
 find_package(PendarlabMavlinkEndpoint REQUIRED)
+find_package(Threads REQUIRED)
 
 ##############################################################################
 ###########################     AgentRegistry     ############################
@@ -117,13 +118,16 @@ set_target_properties(MavlinkHubStartupAppConfigurator PROPERTIES OUTPUT_NAME pe
 ##############################################################################
 add_library(MavlinkHubCliUiHandler SHARED
   src/app/ui_handler/CliUiHandler.cpp
+  external/ftxui-7.0.3/ftxui.cpp
 )
 target_include_directories(MavlinkHubCliUiHandler PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/ftxui-7.0.3>
 )
 target_link_libraries(MavlinkHubCliUiHandler
     PUBLIC pendarlab::MavlinkHubSdk
+    PUBLIC Threads::Threads
 )
 set_target_properties(MavlinkHubCliUiHandler PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_cli_ui_handler)
 
