@@ -409,3 +409,17 @@ target_include_directories(MavlinkHubAppTest PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
 )
 
+##############################################################################
+#########################    Command Descriptor Test   #######################
+##############################################################################
+add_executable(MavlinkHubCommandDescriptorTest
+  test/app/types/command_descriptor_test.cpp
+)
+target_include_directories(MavlinkHubCommandDescriptorTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubCommandDescriptorTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubAppService
+)
+
