@@ -1,5 +1,6 @@
 #pragma once
 
+#include "app/types/CommandDescriptor.h"
 #include "app/types/CommandResult.h"
 #include "app/types/UserCommand.h"
 
@@ -11,5 +12,7 @@ namespace pendarlab::app::mavlink_hub
     virtual ~IAppService() = default;
 
     virtual CommandResult executeCommand(const UserCommand& cmd) = 0;
+
+    virtual std::vector<CommandDescriptor> getCommandDescriptors() const { return commandDescriptors(); }
   };
 } // namespace pendarlab::app::mavlink_hub

@@ -164,6 +164,7 @@ set_target_properties(MavlinkHubJsonUtils PROPERTIES OUTPUT_NAME pendarlab-mavli
 ##############################################################################
 add_library(MavlinkHubAppService SHARED
   src/app/app_service/AppService.cpp
+  src/app/types/CommandDescriptor.cpp
 )
 target_include_directories(MavlinkHubAppService PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
@@ -406,5 +407,19 @@ add_executable(MavlinkHubAppTest
 )
 target_include_directories(MavlinkHubAppTest PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+
+##############################################################################
+#########################    Command Descriptor Test   #######################
+##############################################################################
+add_executable(MavlinkHubCommandDescriptorTest
+  test/app/types/command_descriptor_test.cpp
+)
+target_include_directories(MavlinkHubCommandDescriptorTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubCommandDescriptorTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubAppService
 )
 

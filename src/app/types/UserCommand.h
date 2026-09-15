@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app/types/UserCommandType.h"
+#include "app/types/CommandDescriptor.h"
 
 #include <string>
 

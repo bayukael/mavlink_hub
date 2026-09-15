@@ -1,5 +1,8 @@
 #pragma once
 
+#include <string_view>
+#include <vector>
+
 namespace pendarlab::app::mavlink_hub
 {
   enum class UserCommandType {
@@ -27,5 +30,17 @@ namespace pendarlab::app::mavlink_hub
     GET_AGENT_STATUS,
     GET_AGENT_STATUS_ALL,
   };
+
+  struct CommandDescriptor {
+    UserCommandType type;
+    std::string_view name;
+    bool requires_payload;
+    std::string_view payload_hint;
+  };
+
+  // Canonical descriptor table for all commands, indexed by UserCommandType
+  // (one entry per enumerator, in enum order). Single source of truth for the
+  // command names and payload metadata surfaced to the CLI UI.
+  const std::vector<CommandDescriptor>& commandDescriptors();
 
 } // namespace pendarlab::app::mavlink_hub
