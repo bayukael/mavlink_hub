@@ -164,6 +164,7 @@ set_target_properties(MavlinkHubJsonUtils PROPERTIES OUTPUT_NAME pendarlab-mavli
 ##############################################################################
 add_library(MavlinkHubAppService SHARED
   src/app/app_service/AppService.cpp
+  src/app/types/CommandDescriptor.cpp
 )
 target_include_directories(MavlinkHubAppService PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 

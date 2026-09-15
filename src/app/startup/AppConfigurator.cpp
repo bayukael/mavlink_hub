@@ -2,7 +2,7 @@
 
 #include "app/types/CommandResult.h"
 #include "app/types/UserCommand.h"
-#include "app/types/UserCommandType.h"
+#include "app/types/CommandDescriptor.h"
 #include "common/json_utils/JsonUtils.h"
 
 #include <fstream>
