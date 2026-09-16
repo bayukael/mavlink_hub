@@ -132,6 +132,23 @@ target_link_libraries(MavlinkHubCliUiHandler
 set_target_properties(MavlinkHubCliUiHandler PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_cli_ui_handler)
 
 ##############################################################################
+#########################     CliUiPreview     ################################
+##############################################################################
+add_executable(MavlinkHubCliUiPreview
+  test/app/ui_handler/CliUiPreview.cpp
+)
+target_include_directories(MavlinkHubCliUiPreview PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/ftxui-7.0.3>
+)
+target_link_libraries(MavlinkHubCliUiPreview
+  PRIVATE MavlinkHubCliUiHandler
+  PRIVATE MavlinkHubMockAppService
+  PRIVATE Threads::Threads
+)
+
+##############################################################################
 ##############################     LibLoader     #############################
 ##############################################################################
 add_library(MavlinkHubLibLoader SHARED
