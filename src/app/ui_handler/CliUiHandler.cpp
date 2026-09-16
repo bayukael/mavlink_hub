@@ -8,16 +8,16 @@
 namespace pendarlab::app::mavlink_hub
 {
   struct CliUiHandler::CliUiHandlerImpl {
-    CliUiHandlerImpl(AppService& appsrv);
-    AppService& app_service;
+    CliUiHandlerImpl(IAppService& appsrv);
+    IAppService& app_service;
     OperationResult run_result;
   };
 
-  CliUiHandler::CliUiHandlerImpl::CliUiHandlerImpl(AppService& appsrv) : app_service(appsrv)
+  CliUiHandler::CliUiHandlerImpl::CliUiHandlerImpl(IAppService& appsrv) : app_service(appsrv)
   {
   }
 
-  CliUiHandler::CliUiHandler(AppService& appsrv) : d(std::make_unique<CliUiHandlerImpl>(appsrv))
+  CliUiHandler::CliUiHandler(IAppService& appsrv) : d(std::make_unique<CliUiHandlerImpl>(appsrv))
   {
   }
   CliUiHandler::~CliUiHandler()
