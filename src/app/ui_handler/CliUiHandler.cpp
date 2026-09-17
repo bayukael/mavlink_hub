@@ -27,6 +27,8 @@ namespace pendarlab::app::mavlink_hub
 
     bool running = false;
     std::thread ui_thread;
+
+    void generateUserInterface();
   };
 
   CliUiHandler::CliUiHandlerImpl::CliUiHandlerImpl(IAppService& appsrv) : app_service(appsrv)
@@ -35,6 +37,76 @@ namespace pendarlab::app::mavlink_hub
     for (const CommandDescriptor& descriptor : command_descriptors) {
       command_entries.push_back(std::string(descriptor.name));
     }
+  }
+
+  void CliUiHandler::CliUiHandlerImpl::generateUserInterface()
+  {
+    using namespace ftxui;
+
+    MenuOption command_options;
+    command_options.on_enter = [this] { committed_command = selected_command; };
+
+    Component command_menu = Menu(&command_entries, &selected_command, command_options);
+    Component payload_input = Input(&payload, "payload (JSON)");
+
+    Component action_menu = Menu(&action_entries, &selected_action);
+
+    Component result_pane = Renderer([] {
+      return vbox(text("Command Result") | bold | center, separator(),
+                  vbox({
+                      text("(empty)") | dim,
+                  }) | frame |
+                      vscroll_indicator) | border;
+    });
+
+    Component command_box =
+        command_menu | Renderer([](Element inner) { return vbox(text("Command Lists") | bold | center, separator(), inner) | border; });
+    Component payload_box =
+        payload_input | Renderer([](Element inner) { return vbox(text("Command Payload") | bold | center, separator(), inner) | border; });
+    Component action_box =
+        action_menu | Renderer([](Element inner) { return vbox(text("Action") | bold | center, separator(), inner) | border; });
+
+    Component selected_command_box = Renderer([this] {
+      std::string selected_name = "?";
+      std::string payload_hint = "?";
+      if (committed_command >= 0 && committed_command < static_cast<int>(command_descriptors.size())) {
+        const CommandDescriptor& descriptor = command_descriptors[static_cast<std::size_t>(committed_command)];
+        selected_name = std::string(descriptor.name);
+        payload_hint = descriptor.requires_payload ? "required" : "not required";
+      }
+      return vbox(text("Selected Command") | bold | center, separator(),
+                  vbox({
+                      text(selected_name),
+                      text("payload: " + payload_hint) | dim,
+                  })) |
+             border;
+    });
+
+    Component third_column = Container::Vertical({ action_box }) | Renderer([this, selected_command_box](Element inner) {
+                               return vbox({
+                                          selected_command_box->Render() | flex_shrink_factor(0),
+                                          inner | flex,
+                                      }) |
+                                      size(WIDTH, EQUAL, 30) | flex_shrink_factor(0);
+                             });
+
+    Component top_row = Container::Horizontal({
+        command_box | size(WIDTH, EQUAL, 32) | flex_shrink_factor(0),
+        payload_box | flex_factor(1, 1),
+        third_column,
+        result_pane | flex_factor(2, 1),
+    });
+
+    auto layout = top_row | Renderer([](Element inner) {
+                    return vbox({
+                               text("MAVLink Hub - Command Execution UI") | bold | center | border,
+                               inner | flex,
+                           }) |
+                           border;
+                  });
+
+    auto app = App::Fullscreen();
+    app.Loop(layout);
   }
 
   CliUiHandler::CliUiHandler(IAppService& appsrv) : d(std::make_unique<CliUiHandlerImpl>(appsrv))
@@ -54,74 +126,7 @@ namespace pendarlab::app::mavlink_hub
     }
     d->running = true;
 
-    d->ui_thread = std::thread([this]() {
-      using namespace ftxui;
-
-      MenuOption command_options;
-      command_options.on_enter = [this] { d->committed_command = d->selected_command; };
-
-      auto command_menu = Menu(&d->command_entries, &d->selected_command, command_options);
-      auto payload_input = Input(&d->payload, "payload (JSON)");
-
-      auto action_menu = Menu(&d->action_entries, &d->selected_action);
-
-      auto result_pane = Renderer([] {
-        return window(
-            text("Command Result") | bold,
-            vbox({
-                text("(empty)") | dim,
-            }) |
-                frame | vscroll_indicator);
-      });
-
-      auto command_box = command_menu | Renderer([](Element inner) { return window(text("Command Lists") | bold, inner); });
-      auto payload_box = payload_input | Renderer([](Element inner) { return window(text("Command Payload") | bold, inner); });
-      auto action_box = action_menu | Renderer([](Element inner) { return window(text("Action") | bold, inner); });
-
-      auto selected_command_box = Renderer([this] {
-        std::string selected_name = "?";
-        std::string payload_hint = "?";
-        if (d->committed_command >= 0 && d->committed_command < static_cast<int>(d->command_descriptors.size())) {
-          const CommandDescriptor& descriptor = d->command_descriptors[static_cast<std::size_t>(d->committed_command)];
-          selected_name = std::string(descriptor.name);
-          payload_hint = descriptor.requires_payload ? "required" : "not required";
-        }
-        return window(
-            text("Selected Command") | bold,
-            vbox({
-                text(selected_name),
-                text("payload: " + payload_hint) | dim,
-            }));
-      });
-
-      auto third_column =
-          Container::Vertical({ action_box }) | Renderer([this, selected_command_box](Element inner) {
-            return vbox({
-                       selected_command_box->Render() | flex_shrink_factor(0),
-                       separator(),
-                       inner | flex,
-                   }) |
-                   size(WIDTH, EQUAL, 30) | flex_shrink_factor(0);
-          });
-
-      auto top_row = Container::Horizontal({
-          command_box | size(WIDTH, EQUAL, 32) | flex_shrink_factor(0),
-          payload_box | flex_factor(1, 1),
-          third_column,
-          result_pane | flex_factor(2, 1),
-      });
-
-      auto layout = top_row | Renderer([](Element inner) {
-                      return vbox({
-                                 text("MAVLink Hub - Command Execution UI") | bold | center | border,
-                                 inner | flex,
-                             }) |
-                             border;
-                    });
-
-      auto app = App::Fullscreen();
-      app.Loop(layout);
-    });
+    d->ui_thread = std::thread(&CliUiHandler::CliUiHandlerImpl::generateUserInterface, d.get());
   }
 
   void CliUiHandler::stop()
