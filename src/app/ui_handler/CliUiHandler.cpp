@@ -106,8 +106,38 @@ namespace pendarlab::app::mavlink_hub
                            border;
                   });
 
+    std::vector<Component> tab_boxes{ command_box, payload_box, action_box };
+
+    auto focus_next_box = [&](int direction) {
+      int focused_index = -1;
+      for (std::size_t i = 0; i < tab_boxes.size(); ++i) {
+        if (tab_boxes[i]->Focused()) {
+          focused_index = static_cast<int>(i);
+          break;
+        }
+      }
+      if (focused_index < 0) {
+        focused_index = 0;
+      }
+      const std::size_t next =
+          (static_cast<std::size_t>(focused_index) + static_cast<std::size_t>(direction) + tab_boxes.size()) % tab_boxes.size();
+      tab_boxes[next]->TakeFocus();
+    };
+
+    auto layout_with_nav = CatchEvent(layout, [&](Event event) {
+      if (event == Event::Tab) {
+        focus_next_box(+1);
+        return true;
+      }
+      if (event == Event::TabReverse) {
+        focus_next_box(-1);
+        return true;
+      }
+      return false;
+    });
+
     auto app = App::Fullscreen();
-    app.Loop(layout);
+    app.Loop(layout_with_nav);
   }
 
   CliUiHandler::CliUiHandler(IAppService& appsrv) : d(std::make_unique<CliUiHandlerImpl>(appsrv))
