@@ -21,7 +21,7 @@ namespace pendarlab::app::mavlink_hub
     std::vector<std::string> command_entries;
     std::vector<std::string> action_entries{ "Execute command", "Clear payload", "Clear result" };
     int selected_command = 0;
-    int committed_command = 0;
+    int committed_command = -1;
     int selected_action = 0;
     std::string payload;
 
@@ -56,7 +56,8 @@ namespace pendarlab::app::mavlink_hub
                   vbox({
                       text("(empty)") | dim,
                   }) | frame |
-                      vscroll_indicator) | border;
+                      vscroll_indicator) |
+             border;
     });
 
     Component command_box =
@@ -67,8 +68,8 @@ namespace pendarlab::app::mavlink_hub
         action_menu | Renderer([](Element inner) { return vbox(text("Action") | bold | center, separator(), inner) | border; });
 
     Component selected_command_box = Renderer([this] {
-      std::string selected_name = "?";
-      std::string payload_hint = "?";
+      std::string selected_name = "none";
+      std::string payload_hint = "-";
       if (committed_command >= 0 && committed_command < static_cast<int>(command_descriptors.size())) {
         const CommandDescriptor& descriptor = command_descriptors[static_cast<std::size_t>(committed_command)];
         selected_name = std::string(descriptor.name);
