@@ -4,6 +4,8 @@
 
 #include <ftxui.hpp>
 #include <memory>
+#include <mutex>
+#include <optional>
 #include <string>
 #include <thread>
 #include <vector>
@@ -26,10 +28,18 @@ namespace pendarlab::app::mavlink_hub
     std::string payload;
     std::string app_status = "Running";
 
+    std::optional<CommandResult> command_result;
+    std::mutex result_mutex;
+    bool executing = false;
+    std::thread execute_thread;
+
     bool running = false;
     std::thread ui_thread;
 
     void generateUserInterface();
+    void executeCurrentCommand();
+    void executeCommandAsync(const UserCommand& cmd);
+    std::string actionStatusText();
   };
 
   CliUiHandler::CliUiHandlerImpl::CliUiHandlerImpl(IAppService& appsrv) : app_service(appsrv)
@@ -38,6 +48,57 @@ namespace pendarlab::app::mavlink_hub
     for (const CommandDescriptor& descriptor : command_descriptors) {
       command_entries.push_back(std::string(descriptor.name));
     }
+  }
+
+  std::string CliUiHandler::CliUiHandlerImpl::actionStatusText()
+  {
+    if (executing) {
+      return "Busy - a command is running";
+    }
+    if (committed_command < 0 || committed_command >= static_cast<int>(command_descriptors.size())) {
+      return "No command selected";
+    }
+    return "Ready to execute command";
+  }
+
+  void CliUiHandler::CliUiHandlerImpl::executeCurrentCommand()
+  {
+    if (executing) {
+      return;
+    }
+    if (committed_command < 0 || committed_command >= static_cast<int>(command_descriptors.size())) {
+      return;
+    }
+
+    UserCommand cmd;
+    cmd.cmd_type = command_descriptors[static_cast<std::size_t>(committed_command)].type;
+    cmd.payload = payload;
+
+    executeCommandAsync(cmd);
+  }
+
+  void CliUiHandler::CliUiHandlerImpl::executeCommandAsync(const UserCommand& cmd)
+  {
+    executing = true;
+
+    execute_thread = std::thread([this, cmd]() {
+      CommandResult result = app_service.executeCommand(cmd);
+
+      if (ftxui::App::Active() != nullptr) {
+        ftxui::App::Active()->Post([this, result = std::move(result)]() mutable {
+          std::lock_guard<std::mutex> lock(result_mutex);
+          command_result = std::move(result);
+          executing = false;
+          if (ftxui::App::Active() != nullptr) {
+            ftxui::App::Active()->RequestAnimationFrame();
+          }
+        });
+      } else {
+        std::lock_guard<std::mutex> lock(result_mutex);
+        command_result = std::move(result);
+        executing = false;
+      }
+    });
   }
 
   void CliUiHandler::CliUiHandlerImpl::generateUserInterface()
@@ -50,23 +111,63 @@ namespace pendarlab::app::mavlink_hub
     Component command_menu = Menu(&command_entries, &selected_command, command_options);
     Component payload_input = Input(&payload, "payload (JSON)");
 
-    Component action_menu = Menu(&action_entries, &selected_action);
+    MenuOption action_options;
+    action_options.on_enter = [this] {
+      switch (selected_action) {
+        case 0: executeCurrentCommand(); break;
+        case 1: payload.clear(); break;
+        case 2: {
+          std::lock_guard<std::mutex> lock(result_mutex);
+          command_result.reset();
+          break;
+        }
+        default: break;
+      }
+    };
 
-    Component result_pane = Renderer([] {
-      return vbox(text("Command Result") | bold | center, separator(),
-                  vbox({
-                      text("(empty)") | dim,
-                  }) | frame |
-                      vscroll_indicator) |
+    Component action_menu = Menu(&action_entries, &selected_action, action_options);
+
+    Component result_pane = Renderer([this] {
+      std::lock_guard<std::mutex> lock(result_mutex);
+      Elements result_content;
+      if (command_result.has_value()) {
+        result_content.push_back(text(command_result->success ? "SUCCESS" : "FAILED") | bold);
+        for (const std::string& message : command_result->message) {
+          result_content.push_back(text(message));
+        }
+        if (!command_result->data.empty()) {
+          result_content.push_back(separator());
+          result_content.push_back(text(command_result->data) | dim);
+        }
+      } else {
+        result_content.push_back(text("(empty)") | dim);
+      }
+      return vbox(text("Command Result") | bold | center, separator(), vbox(std::move(result_content)) | frame | vscroll_indicator) |
              border;
     });
 
-    Component command_box =
-        command_menu | Renderer([](Element inner) { return vbox(text("Command Lists") | bold | center, separator(), inner) | border; });
-    Component payload_box =
-        payload_input | Renderer([](Element inner) { return vbox(text("Command Payload") | bold | center, separator(), inner) | border; });
-    Component action_box =
-        action_menu | Renderer([](Element inner) { return vbox(text("Action") | bold | center, separator(), inner) | border; });
+    // clang-format off
+    Component command_box = Renderer(command_menu, [&] {
+      return vbox(
+        text("Command Lists") | bold | center, separator(),
+        hbox(command_menu->Render(), filler()) | vscroll_indicator | frame
+      ) | border;
+    });
+    Component payload_box = Renderer(payload_input, [&] {
+      return vbox(
+        text("Command Payload") | bold | center,
+        separator(),
+        payload_input->Render()
+      ) | border;
+    });
+    Component action_box = Renderer(action_menu, [&] {
+      return vbox(
+        text("Action") | bold | center,
+        separator(),
+        action_menu->Render()
+      ) | border;
+    });
+    // clang-format on
 
     Component selected_command_box = Renderer([this] {
       std::string selected_name = "none";
@@ -87,7 +188,7 @@ namespace pendarlab::app::mavlink_hub
     Component action_status_box = Renderer([this] {
       return vbox(text("Action Status") | bold | center, separator(),
                   vbox({
-                      text("Ready") | dim,
+                      text(actionStatusText()) | dim,
                   })) |
              border;
     });
@@ -176,6 +277,19 @@ namespace pendarlab::app::mavlink_hub
     if (!d->running) {
       return;
     }
+
+    if (d->execute_thread.joinable()) {
+      std::string waiting_for = "a command";
+      if (d->committed_command >= 0 && d->committed_command < static_cast<int>(d->command_descriptors.size())) {
+        waiting_for = std::string(d->command_descriptors[static_cast<std::size_t>(d->committed_command)].name);
+      }
+      d->app_status = "Exiting - waiting for: " + waiting_for;
+      if (ftxui::App::Active() != nullptr) {
+        ftxui::App::Active()->RequestAnimationFrame();
+      }
+      d->execute_thread.join();
+    }
+
     if (ftxui::App::Active() != nullptr) {
       ftxui::App::Active()->Exit();
     }
