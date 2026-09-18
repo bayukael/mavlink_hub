@@ -24,6 +24,7 @@ namespace pendarlab::app::mavlink_hub
     int committed_command = -1;
     int selected_action = 0;
     std::string payload;
+    std::string app_status = "Running";
 
     bool running = false;
     std::thread ui_thread;
@@ -83,10 +84,19 @@ namespace pendarlab::app::mavlink_hub
              border;
     });
 
-    Component third_column = Container::Vertical({ action_box }) | Renderer([this, selected_command_box](Element inner) {
+    Component action_status_box = Renderer([this] {
+      return vbox(text("Action Status") | bold | center, separator(),
+                  vbox({
+                      text("Ready") | dim,
+                  })) |
+             border;
+    });
+
+    Component third_column = Container::Vertical({ action_box }) | Renderer([this, selected_command_box, action_status_box](Element inner) {
                                return vbox({
-                                          selected_command_box->Render() | flex_shrink_factor(0),
-                                          inner | flex,
+                                          selected_command_box->Render(),
+                                          inner,
+                                          action_status_box->Render(),
                                       }) |
                                       size(WIDTH, EQUAL, 30) | flex_shrink_factor(0);
                              });
@@ -98,10 +108,11 @@ namespace pendarlab::app::mavlink_hub
         result_pane | flex_factor(2, 1),
     });
 
-    auto layout = top_row | Renderer([](Element inner) {
+    auto layout = top_row | Renderer([this](Element inner) {
                     return vbox({
                                text("MAVLink Hub - Command Execution UI") | bold | center | border,
                                inner | flex,
+                               text("Application Status: " + app_status) | center | border,
                            }) |
                            border;
                   });
