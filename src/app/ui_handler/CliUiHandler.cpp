@@ -100,10 +100,6 @@ namespace pendarlab::app::mavlink_hub
     execute_thread = std::thread([this, cmd]() {
       CommandResult result = app_service.executeCommand(cmd);
 
-      if(cmd.cmd_type == UserCommandType::APPLY_CURRENT_PLAN){
-        std::this_thread::sleep_for(std::chrono::seconds(5));
-      }
-
       if (ftxui::App::Active() != nullptr) {
         ftxui::App::Active()->Post([this, result = std::move(result)]() mutable {
           std::lock_guard<std::mutex> lock(result_mutex);
