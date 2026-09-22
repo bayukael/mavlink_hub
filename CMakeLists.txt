@@ -143,6 +143,7 @@ target_include_directories(MavlinkHubCliUiHandler PUBLIC
 )
 target_link_libraries(MavlinkHubCliUiHandler
     PUBLIC pendarlab::MavlinkHubSdk
+    PUBLIC MavlinkHubCliUiController
     PUBLIC Threads::Threads
 )
 set_target_properties(MavlinkHubCliUiHandler PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_cli_ui_handler)
