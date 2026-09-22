@@ -42,6 +42,8 @@ namespace pendarlab::app::mavlink_hub
     std::optional<CommandResult> command_result;
     std::mutex result_mutex;
     bool executing = false;
+    std::string executed_command;
+
     std::thread execute_thread;
 
     bool running = false;
@@ -96,6 +98,7 @@ namespace pendarlab::app::mavlink_hub
     }
 
     executing = true;
+    executed_command = command_descriptors[static_cast<std::size_t>(committed_command)].name;
 
     execute_thread = std::thread([this, cmd]() {
       CommandResult result = app_service.executeCommand(cmd);
@@ -219,6 +222,7 @@ namespace pendarlab::app::mavlink_hub
       std::lock_guard<std::mutex> lock(result_mutex);
       Elements result_content;
       if (command_result.has_value()) {
+        result_content.push_back(text(executed_command) | bold);
         result_content.push_back(text(command_result->success ? "SUCCESS" : "FAILED") | bold);
         for (const std::string& message : command_result->message) {
           result_content.push_back(text(message));
