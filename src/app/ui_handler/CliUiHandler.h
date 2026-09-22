@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app/app_service/AppService.h"
+#include "app/app_service/IAppService.h"
 #include "common/types/OperationResult.h"
 
 #include <memory>
@@ -10,7 +10,7 @@ namespace pendarlab::app::mavlink_hub
   class CliUiHandler
   {
   public:
-    CliUiHandler(AppService& appsrv);
+    CliUiHandler(IAppService& appsrv);
     ~CliUiHandler();
     CliUiHandler(CliUiHandler&&) noexcept;
     CliUiHandler& operator=(CliUiHandler&&) noexcept;
