@@ -1,18 +1,13 @@
 #include "app/ui_handler/CliUiController.h"
 
+#include <functional>
 #include <mutex>
 #include <thread>
 
 namespace pendarlab::app::mavlink_hub
 {
   struct CliUiController::CliUiControllerImpl {
-    explicit CliUiControllerImpl(IAppService& appsrv) : app_service(appsrv)
-    {
-      command_descriptors = app_service.getCommandDescriptors();
-      for (const CommandDescriptor& descriptor : command_descriptors) {
-        command_entries.push_back(std::string(descriptor.name));
-      }
-    }
+    explicit CliUiControllerImpl(IAppService& appsrv);
 
     IAppService& app_service;
 
@@ -27,26 +22,43 @@ namespace pendarlab::app::mavlink_hub
     std::optional<CommandResult> command_result;
     std::mutex result_mutex;
     std::thread execute_thread;
+    std::function<void()> on_update;
 
-    bool validCommittedCommand() const
-    {
-      return committed_command >= 0 && committed_command < static_cast<int>(command_descriptors.size());
+    bool validCommittedCommand() const;
+    void executeCommandAsync(const UserCommand& cmd);
+  };
+
+  CliUiController::CliUiControllerImpl::CliUiControllerImpl(IAppService& appsrv) : app_service(appsrv)
+  {
+    command_descriptors = app_service.getCommandDescriptors();
+    for (const CommandDescriptor& descriptor : command_descriptors) {
+      command_entries.push_back(std::string(descriptor.name));
+    }
+  }
+
+  bool CliUiController::CliUiControllerImpl::validCommittedCommand() const
+  {
+    return committed_command >= 0 && committed_command < static_cast<int>(command_descriptors.size());
+  }
+
+  void CliUiController::CliUiControllerImpl::executeCommandAsync(const UserCommand& cmd)
+  {
+    if (execute_thread.joinable()) {
+      execute_thread.join();
     }
 
-    void executeCommandAsync(const UserCommand& cmd)
-    {
-      if (execute_thread.joinable()) {
-        execute_thread.join();
-      }
-
-      execute_thread = std::thread([this, cmd]() {
-        CommandResult result = app_service.executeCommand(cmd);
+    execute_thread = std::thread([this, cmd]() {
+      CommandResult result = app_service.executeCommand(cmd);
+      {
         std::lock_guard<std::mutex> lock(result_mutex);
         command_result = std::move(result);
         executing = false;
-      });
-    }
-  };
+      }
+      if (on_update) {
+        on_update();
+      }
+    });
+  }
 
   CliUiController::CliUiController(IAppService& appsrv) : d(std::make_unique<CliUiControllerImpl>(appsrv))
   {
@@ -128,6 +140,11 @@ namespace pendarlab::app::mavlink_hub
   {
     std::lock_guard<std::mutex> lock(d->result_mutex);
     d->command_result.reset();
+  }
+
+  void CliUiController::setOnUpdate(std::function<void()> callback)
+  {
+    d->on_update = std::move(callback);
   }
 
   void CliUiController::executeCurrentCommand()

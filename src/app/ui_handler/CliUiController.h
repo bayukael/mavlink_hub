@@ -5,6 +5,7 @@
 #include "app/types/CommandResult.h"
 #include "app/types/UserCommand.h"
 
+#include <functional>
 #include <memory>
 #include <optional>
 #include <string>
@@ -47,6 +48,11 @@ namespace pendarlab::app::mavlink_hub
     std::string executedCommand() const;
     std::optional<CommandResult> commandResult() const;
     void clearResult();
+
+    // Registers a callback invoked (from the worker thread) whenever the
+    // observable state changes asynchronously, e.g. when a command finishes
+    // executing. The view uses this to request a UI redraw.
+    void setOnUpdate(std::function<void()> callback);
 
     // Starts an async execution of the committed command with the current
     // payload. No-op while already executing or if no command is committed.
