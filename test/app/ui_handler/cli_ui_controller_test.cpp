@@ -73,6 +73,23 @@ TEST_F(CliUiControllerTest, StoresResultAfterExecution)
   EXPECT_TRUE(result->success);
 }
 
+TEST_F(CliUiControllerTest, OnUpdateInvokedWhenCommandCompletes)
+{
+  app_service.slow_command = UserCommandType::APPLY_CURRENT_PLAN;
+  app_service.slow_delay = kSlowDelay;
+
+  std::atomic<int> update_count{ 0 };
+  controller->setOnUpdate([&] { update_count.fetch_add(1); });
+
+  const int apply_index = static_cast<int>(UserCommandType::APPLY_CURRENT_PLAN);
+  controller->commitCommand(apply_index);
+  controller->executeCurrentCommand();
+  controller->joinExecution();
+
+  EXPECT_EQ(update_count.load(), 1);
+  EXPECT_FALSE(controller->executing());
+}
+
 TEST_F(CliUiControllerTest, MarksExecutingWhileInFlightAndClearsAfter)
 {
   app_service.slow_command = UserCommandType::APPLY_CURRENT_PLAN;
