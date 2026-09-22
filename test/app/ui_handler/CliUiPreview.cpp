@@ -10,6 +10,8 @@ int main()
   using pendarlab::app::mavlink_hub::test::MockAppService;
 
   MockAppService app_service;
+  app_service.slow_command = pendarlab::app::mavlink_hub::UserCommandType::APPLY_CURRENT_PLAN;
+  app_service.slow_delay = std::chrono::seconds(5);
   CliUiHandler cli_handler(app_service);
 
   cli_handler.start();
