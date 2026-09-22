@@ -114,6 +114,22 @@ target_link_libraries(MavlinkHubStartupAppConfigurator
 set_target_properties(MavlinkHubStartupAppConfigurator PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_startup_app_configurator)
 
 ##############################################################################
+##########################     CliUiController     ###########################
+##############################################################################
+add_library(MavlinkHubCliUiController SHARED
+  src/app/ui_handler/CliUiController.cpp
+)
+target_include_directories(MavlinkHubCliUiController PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubCliUiController
+    PUBLIC pendarlab::MavlinkHubSdk
+    PUBLIC Threads::Threads
+)
+set_target_properties(MavlinkHubCliUiController PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_cli_ui_controller)
+
+##############################################################################
 ############################     CliUiHandler     ############################
 ##############################################################################
 add_library(MavlinkHubCliUiHandler SHARED
@@ -146,6 +162,22 @@ target_link_libraries(MavlinkHubCliUiPreview
   PRIVATE MavlinkHubCliUiHandler
   PRIVATE MavlinkHubMockAppService
   PRIVATE Threads::Threads
+)
+
+##############################################################################
+########################     CliUiController Test     ########################
+##############################################################################
+add_executable(MavlinkHubCliUiControllerTest
+  test/app/ui_handler/cli_ui_controller_test.cpp
+)
+target_include_directories(MavlinkHubCliUiControllerTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+)
+target_link_libraries(MavlinkHubCliUiControllerTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubCliUiController
+  PRIVATE MavlinkHubMockAppService
 )
 
 ##############################################################################
