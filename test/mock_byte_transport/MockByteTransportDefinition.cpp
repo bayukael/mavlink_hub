@@ -18,10 +18,10 @@ namespace pendarlab::app::mavlink_hub::test
     std::string required_entry("a_required_string");
     auto it = cfg.find(required_entry);
     if (it == cfg.end()) {
-      result.config = std::nullopt;
+      result.config = nullptr;
       result.messages.push_back("[MockByteTransport] : a required entry is missing: " + required_entry);
     } else {
-      result.config = Config();
+      result.config = std::make_unique<Config>();
     }
 
     return result;
