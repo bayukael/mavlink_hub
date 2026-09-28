@@ -1,7 +1,6 @@
 cmake_minimum_required(VERSION 3.13)
-project(pendarlab_app_mavlink_hub)
+project(pendarlab_app_mavlink_hub VERSION 1.0.0)
 
-set(PROJECT_VERSION 1.0.0)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_BUILD_RPATH_USE_ORIGIN TRUE)
 set(NAMESPACE pendarlab)
@@ -10,8 +9,8 @@ set(PACKAGE_NAME PendarlabMavlinkHub)
 set(MAVLINK_HEADER_DIR "" CACHE PATH "Path to mavlink header directory")
 
 find_package(GTest CONFIG REQUIRED)
-find_package(PendarlabMavlinkHubSdk REQUIRED)
-find_package(PendarlabMavlinkEndpoint REQUIRED)
+find_package(PendarlabMavlinkHubSdk 1.0.0 REQUIRED)
+find_package(PendarlabMavlinkEndpoint 1.0.0 REQUIRED)
 find_package(Threads REQUIRED)
 
 ##############################################################################
