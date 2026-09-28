@@ -1,6 +1,5 @@
 #include "mock_byte_transport/MockByteTransport.h"
 
-#include <mavlink/common/mavlink.h>
 #include <chrono>
 #include <thread>
 
