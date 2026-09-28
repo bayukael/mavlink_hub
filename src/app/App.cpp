@@ -7,7 +7,6 @@
 #include "app/shutdown_controller/ShutdownController.h"
 #include "app/startup/AppConfigurator.h"
 #include "app/startup/ArgsParser.h"
-#include "app/types/AppConfig.h"
 #include "app/ui_handler/CliUiHandler.h"
 #include "manager/Manager.h"
 

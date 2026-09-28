@@ -7,7 +7,6 @@
 #include <mavlink_endpoint/MavlinkEndpoint.h>
 #include <mavlink_hub_sdk/agent/Agent.h>
 #include <mavlink_hub_sdk/agent/AgentState.h>
-#include <mavlink_hub_sdk/manager_resource_requester/IManagerResourceRequester.h>
 #include <mavlink_hub_sdk/mavlink_endpoint_user/IMavlinkEndpointUser.h>
 #include <memory>
 #include <string>
@@ -19,7 +18,6 @@ namespace pendarlab::app::mavlink_hub
   using AgentState = pendarlab::sdk::mavlink_hub::AgentState;
   using MavlinkEndpoint = pendarlab::lib::comm::MavlinkEndpoint;
   using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
-  using IManagerResourceRequester = pendarlab::sdk::mavlink_hub::IManagerResourceRequester;
   using IMavlinkEndpointUser = pendarlab::sdk::mavlink_hub::IMavlinkEndpointUser;
 
   struct EndpointEntry {

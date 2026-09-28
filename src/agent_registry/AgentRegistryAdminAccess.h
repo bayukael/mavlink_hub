@@ -4,7 +4,6 @@
 #include <mavlink_hub_sdk/agent/AgentDefinition.h>
 #include <memory>
 #include <string>
-#include <vector>
 
 namespace pendarlab::app::mavlink_hub
 {

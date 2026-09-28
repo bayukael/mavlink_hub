@@ -3,7 +3,6 @@
 #include "app/types/AppConfig.h"
 
 #include <optional>
-#include <string>
 
 namespace pendarlab::app::mavlink_hub::startup
 {

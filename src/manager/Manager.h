@@ -5,7 +5,6 @@
 #include "manager/IManager.h"
 #include "manager/types/ExecutionResultList.h"
 #include "manager/types/UserPlan.h"
-#include "manager/types/UserPlanPolicy.h"
 
 #include <byte_transport/RegistryUserAccess.h>
 #include <mavlink_endpoint/MavlinkEndpointState.h>

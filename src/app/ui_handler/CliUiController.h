@@ -3,7 +3,6 @@
 #include "app/app_service/IAppService.h"
 #include "app/types/CommandDescriptor.h"
 #include "app/types/CommandResult.h"
-#include "app/types/UserCommand.h"
 
 #include <functional>
 #include <memory>

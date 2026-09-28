@@ -1,13 +1,11 @@
 #include <agent_registry/AgentRegistry.h>
 #include <app/lib_loader/LibLoader.h>
 #include <byte_transport/Registry.h>
-#include <common/types/OperationResult.h>
 #include <gtest/gtest.h>
 
 using TransportRegistry = pendarlab::lib::comm::byte_transport::Registry;
 using AgentRegistry = pendarlab::app::mavlink_hub::AgentRegistry;
 using LibLoader = pendarlab::app::mavlink_hub::LibLoader;
-using OperationResult = pendarlab::app::mavlink_hub::OperationResult;
 class LibLoaderTestSetup
 {
 public:

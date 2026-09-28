@@ -5,7 +5,6 @@
 #include <dlfcn.h>
 #include <mavlink_hub_sdk/agent/AgentDefinition.h>
 #include <unordered_map>
-#include <vector>
 
 namespace pendarlab::app::mavlink_hub
 {
