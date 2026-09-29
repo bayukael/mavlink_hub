@@ -7,7 +7,6 @@
 #include <mavlink_endpoint/MavlinkEndpoint.h>
 #include <mavlink_hub_sdk/agent/Agent.h>
 #include <mavlink_hub_sdk/agent/AgentState.h>
-#include <mavlink_hub_sdk/manager_resource_requester/IManagerResourceRequester.h>
 #include <mavlink_hub_sdk/mavlink_endpoint_user/IMavlinkEndpointUser.h>
 #include <memory>
 #include <string>
@@ -19,7 +18,6 @@ namespace pendarlab::app::mavlink_hub
   using AgentState = pendarlab::sdk::mavlink_hub::AgentState;
   using MavlinkEndpoint = pendarlab::lib::comm::MavlinkEndpoint;
   using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
-  using IManagerResourceRequester = pendarlab::sdk::mavlink_hub::IManagerResourceRequester;
   using IMavlinkEndpointUser = pendarlab::sdk::mavlink_hub::IMavlinkEndpointUser;
 
   struct EndpointEntry {
@@ -439,7 +437,7 @@ namespace pendarlab::app::mavlink_hub
         auto parse_result = d->agent_registry[type]->parseConfig(config);
         std::unique_ptr<Agent> p_agent = nullptr;
         if (parse_result.ok()) {
-          p_agent = d->agent_registry[type]->create(parse_result.parsed.value(), std::make_unique<ManagerResourceRequester>(name, this));
+          p_agent = d->agent_registry[type]->create(*parse_result.parsed, std::make_unique<ManagerResourceRequester>(name, this));
         }
 
         if (p_agent) {
@@ -474,7 +472,7 @@ namespace pendarlab::app::mavlink_hub
         auto parse_result = d->agent_registry[type]->parseConfig(config);
         bool configure_success = false;
         if (parse_result.ok()) {
-          configure_success = d->agents[name]->configure(parse_result.parsed.value());
+          configure_success = d->agents[name]->configure(*parse_result.parsed);
         }
 
         if (configure_success) {

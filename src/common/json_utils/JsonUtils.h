@@ -1,6 +1,5 @@
 #pragma once
 
-#include "app/lib_loader/LibInfo.h"
 #include "app/types/LibList.h"
 #include "app/types/AppConfig.h"
 #include "manager/types/ExecutionResultList.h"

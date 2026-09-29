@@ -4,7 +4,6 @@
 #include "common/types/OperationResult.h"
 
 #include <algorithm>
-#include <chrono>
 #include <ftxui.hpp>
 #include <memory>
 #include <string>

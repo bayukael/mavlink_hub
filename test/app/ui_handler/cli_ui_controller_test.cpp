@@ -4,7 +4,6 @@
 #include <atomic>
 #include <chrono>
 #include <gtest/gtest.h>
-#include <thread>
 
 using pendarlab::app::mavlink_hub::CliUiController;
 using pendarlab::app::mavlink_hub::CommandDescriptor;
