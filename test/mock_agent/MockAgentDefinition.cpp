@@ -18,10 +18,10 @@ namespace pendarlab::app::mavlink_hub::test
     std::string required_entry("a_required_string");
     auto it = cfg.find(required_entry);
     if (it == cfg.end()) {
-      result.parsed = std::nullopt;
+      result.parsed = nullptr;
       result.messages.push_back("[MockAgent] : a required entry is missing: " + required_entry);
     } else {
-      result.parsed = AgentConfig();
+      result.parsed = std::make_unique<AgentConfig>();
     }
     
     return result;
