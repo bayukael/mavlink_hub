@@ -21,6 +21,7 @@ namespace pendarlab::app::mavlink_hub
   class CliUiController
   {
   public:
+    /// @param appsrv the service commands are dispatched to. Must outlive this controller.
     explicit CliUiController(IAppService& appsrv);
     ~CliUiController();
     CliUiController(const CliUiController&) = delete;
@@ -28,24 +29,52 @@ namespace pendarlab::app::mavlink_hub
     CliUiController(CliUiController&&) noexcept;
     CliUiController& operator=(CliUiController&&) noexcept;
 
+    /// @return the command descriptors loaded from the service.
     const std::vector<CommandDescriptor>& commandDescriptors() const;
+
+    /// @return display names for every command (one per descriptor).
     const std::vector<std::string>& commandEntries() const;
+
+    /// Mutable access to the command display names, for the view to bind against.
     std::vector<std::string>& commandEntries();
 
+    /// @return index of the currently highlighted (but not necessarily committed) command.
     int selectedCommand() const;
+
+    /// Mutable access to the selected-command index, for the view to bind against.
     int& selectedCommand();
+
+    /// Set which command is highlighted.
     void selectCommand(int index);
+
+    /// @return index of the committed command, or -1 if none is committed.
     int committedCommand() const;
+
+    /// Mark \p index as the command to execute on the next executeCurrentCommand.
     void commitCommand(int index);
 
+    /// @return the current command payload.
     const std::string& payload() const;
+
+    /// Mutable access to the payload buffer, for the view to bind against.
     std::string& payload();
+
+    /// Replace the payload.
     void setPayload(std::string value);
+
+    /// Clear the payload buffer.
     void clearPayload();
 
+    /// @return true while a command is being executed in the background.
     bool executing() const;
+
+    /// @return the name of the command most recently executed.
     std::string executedCommand() const;
+
+    /// @return the result of the most recently executed command, or std::nullopt if none.
     std::optional<CommandResult> commandResult() const;
+
+    /// Clear the stored command result.
     void clearResult();
 
     // Registers a callback invoked (from the worker thread) whenever the

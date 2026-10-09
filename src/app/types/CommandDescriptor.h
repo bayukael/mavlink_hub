@@ -5,6 +5,7 @@
 
 namespace pendarlab::app::mavlink_hub
 {
+  /// The set of user commands the app service understands.
   enum class UserCommandType {
     LOAD_PLAN_FROM_PATH,
     LOAD_PLAN_FROM_JSON_TEXT,
@@ -31,11 +32,12 @@ namespace pendarlab::app::mavlink_hub
     GET_AGENT_STATUS_ALL,
   };
 
+  /// Static metadata for one user command, surfaced to the CLI UI.
   struct CommandDescriptor {
-    UserCommandType type;
-    std::string_view name;
-    bool requires_payload;
-    std::string_view payload_hint;
+    UserCommandType type;          ///< The command this descriptor describes.
+    std::string_view name;         ///< Canonical command name as typed in the UI.
+    bool requires_payload;         ///< Whether the command needs a payload to execute.
+    std::string_view payload_hint; ///< Human-readable hint for the expected payload format.
   };
 
   // Canonical descriptor table for all commands, indexed by UserCommandType

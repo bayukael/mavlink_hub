@@ -18,6 +18,16 @@
 
 namespace pendarlab::app::mavlink_hub
 {
+  /// Default IManager implementation.
+  ///
+  /// Holds the authoritative registries of endpoints and agents. Endpoint definitions and
+  /// their transports come from the transport registry; agent definitions come from the
+  /// agent registry. Both are supplied as read-only user access views, so the manager can
+  /// look up registered types and their config parsers without mutating them.
+  ///
+  /// The class owns its state through a PIMPL handle; it is move-only and not copyable.
+  /// Endpoints/agents are keyed by name, and each endpoint tracks per-requester reference
+  /// counts so the same requester may hold several MavlinkEndpointUser handles.
   class Manager : public IManager
   {
     using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
@@ -26,6 +36,8 @@ namespace pendarlab::app::mavlink_hub
     using IMavlinkEndpointUser = pendarlab::sdk::mavlink_hub::IMavlinkEndpointUser;
 
   public:
+    /// @param agent_registry read-only view of the registered agent definitions.
+    /// @param transport_registry read-only view of the registered transport definitions.
     Manager(const AgentRegistryUserAccess&, const TransportRegistryUserAccess&);
     virtual ~Manager();
     Manager(Manager&&) noexcept;

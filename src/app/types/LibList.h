@@ -7,5 +7,6 @@
 
 namespace pendarlab::app::mavlink_hub
 {
+  /// Collection of libraries keyed by registration name.
   typedef std::unordered_map<std::string, LibInfo> LibList;
 } // namespace pendarlab::app::mavlink_hub
