@@ -9,6 +9,10 @@
 
 namespace pendarlab::app::mavlink_hub
 {
+  /// Concrete agent-definition registry backed by a name-keyed map.
+  ///
+  /// Owns the map of definitions (as reference wrappers to caller-supplied definitions).
+  /// Admin operations mutate the map; createUser hands out read-only views over it.
   class AgentRegistry : public AgentRegistryAdminAccess
   {
   public:

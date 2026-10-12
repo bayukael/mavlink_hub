@@ -10,6 +10,11 @@
 
 namespace pendarlab::app::mavlink_hub
 {
+  /// Concrete IAppService delegating to an IManager and ILibLoader.
+  ///
+  /// Tracks the currently loaded user plan (from LOAD_PLAN_FROM_PATH / LOAD_PLAN_FROM_JSON_TEXT)
+  /// and supports plan lifecycle commands. Commands that require a currently loaded plan fail
+  /// with a clear message when none is present.
   class AppService : public IAppService
   {
   public:
