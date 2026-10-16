@@ -1,6 +1,6 @@
 # mavlink_hub
 
-`mavlink_hub` (Pendarlab) is a C++17 application that acts as a hub for communicating with
+`mavlink_hub` (Pendarlab) is an application that acts as a hub for communicating with
 multiple MAVLink endpoints through a set of runtime loaded *agents*. It lets an operator connect
 to MAVLink-speaking systems (autopilots, ground control stations) directly, and to
 non-MAVLink-speaking systems (simulators, onboard compute, middleware) through pluggable agents
@@ -29,69 +29,6 @@ external packages above and their instances are created and managed by the hub a
 
 For a full C4-style walkthrough of the system context, components, and class-level internals, see
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-## Architecture
-
-A one-paragraph summary:
-
-```
-            Operator
-               │  drives via CLI UI (ftxui)
-               ▼
-        ┌──────────────┐
-        │  mavlink_hub │
-        │  ┌────────┐  │
-        │  │   UI   │  │
-        │  └───┬────┘  │
-        │      │ UserCommand / CommandResult
-        │  ┌───▼────┐  │
-        │  │  App   │  │  composition root + command dispatch
-        │  └───┬────┘  │
-        │      │ IManager
-        │  ┌───▼────┐  │
-        │  │Manager │  │  owns live endpoints + agents
-        │  └───┬────┘  │
-        └──────┼───────┘
-               │
-     ┌─────────┴──────────┐
-     ▼                    ▼
- MAVLink endpoints    Agents (plugins)
- (mavlink_endpoint +  (mavlink_hub_sdk)
-  byte_transport)
-```
-
-Key building blocks (all in `pendarlab::app::mavlink_hub`):
-
-- **UI** — operator-facing front end with a clean model/view split: `CliUiController`
-  (framework-agnostic model, unit-testable) and `CliUiHandler` (the ftxui view + thread).
-- **Application** — composition root and command front end: `App`, `AppService` (the
-  `UserCommand`/`IManager` mediator), `LibLoader` (dlopen plugin loading), and startup/shutdown
-  wiring (`ArgsParser`, `AppConfigurator`, `ShutdownController`).
-- **Manager** — the domain core. Owns live agent and endpoint instances and is their lifecycle
-  factory, backed by the plugin-definition registries. Exposed through the `IManager` interface.
-- **AgentRegistry** — capability-separated store of agent-plugin definitions, with read-only
-  (user) and read-write (admin) views.
-- **Common** — `JsonUtils` (the JSON bridge via `jsoncons`) and `OperationResult` (universal
-  result type).
-
-Physical layout (authoritative):
-
-```
-mavlink_hub/
-├── CMakeLists.txt
-├── external/                      # vendored header-only deps (cli11, jsoncons, ftxui)
-├── resources/json_schemas/        # JSON schemas for user-command payloads
-├── src/
-│   ├── main.cpp                   # entry point (main executable target is commented out)
-│   ├── agent_registry/            # AgentRegistry + Admin/User access
-│   ├── manager/                   # Manager, plan execution, endpoint users
-│   ├── app/                       # application layer (composition root, UI, startup)
-│   └── common/                    # JsonUtils, OperationResult
-└── test/                          # GTest + mock libraries
-```
-
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full breakdown of each component, the
-dependency injection wiring, the build/CMake target table, and the current state and known gaps.
 
 ## Quick start (build)
 
