@@ -6,6 +6,7 @@
 #include <mavlink_hub_sdk/mavlink_endpoint_user/IMavlinkEndpointUser.h>
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace pendarlab::app::mavlink_hub
 {
@@ -30,6 +31,15 @@ namespace pendarlab::app::mavlink_hub
     /// @return a handle to the requested endpoint, or nullptr if \p ep_name is not registered.
     /// @see IManager::createMavlinkEndpointUser
     virtual std::unique_ptr<IMavlinkEndpointUser> requestMavlinkEndpoint(const std::string& ep_name) override;
+
+    /// @return the names of all currently-known MAVLink endpoints.
+    ///
+    /// This forwards to IManager::getMavlinkEndpointList() and returns its result, so the
+    /// returned set is the manager's full list of REGISTERED endpoints, unfiltered by
+    /// connection state (disconnected endpoints may appear). This lets the agent treat the
+    /// returned set as the complete set of endpoints it may target.
+    /// @see IManager::getMavlinkEndpointList
+    virtual std::vector<std::string> getMavlinkEndpointList() override;
 
     /// @return the requester identity this instance was constructed with.
     std::string getName();

@@ -3,6 +3,7 @@
 #include "manager/IManager.h"
 
 #include <string>
+#include <vector>
 
 namespace pendarlab::app::mavlink_hub
 {
@@ -33,6 +34,11 @@ namespace pendarlab::app::mavlink_hub
   std::unique_ptr<IMavlinkEndpointUser> ManagerResourceRequester::requestMavlinkEndpoint(const std::string& ep_name)
   {
     return d->manager->createMavlinkEndpointUser(ep_name, d->name);
+  }
+
+  std::vector<std::string> ManagerResourceRequester::getMavlinkEndpointList()
+  {
+    return d->manager->getMavlinkEndpointList();
   }
 
   std::string ManagerResourceRequester::getName(){

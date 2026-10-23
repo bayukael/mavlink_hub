@@ -14,6 +14,7 @@
 #include <mock_agent/MockAgentDefinition.h>
 #include <mock_byte_transport/MockByteTransportDefinition.h>
 #include <string>
+#include <vector>
 
 using MockAgentDefinition = pendarlab::app::mavlink_hub::test::MockAgentDefinition;
 using MockByteTransportDefinition = pendarlab::app::mavlink_hub::test::MockByteTransportDefinition;
@@ -835,6 +836,8 @@ TEST_F(MavlinkEndpointUserManagementTest, DeletingEndpointUserShouldDecreaseUser
 //   - createMavlinkEndpointUser through requestMavlinkEndpoint should be null if endpoint_name does not exist within the manager
 // - Given a manager already containing endpoints:
 //   - getMavlinkEndpointUserList should return the correct number of users.
+// - Given a manager already containing endpoints:
+//   - getMavlinkEndpointList should return the manager's current registered endpoint list.
 class ManagerResourceRequesterTest : public testing::Test, public ManagerTestSetup
 {
 protected:
@@ -900,6 +903,39 @@ TEST_F(ManagerResourceRequesterTest, GettingNumberOfMavlinkEndpointUserShouldGiv
   EXPECT_EQ(user_list.size(), 2);
   EXPECT_EQ(user_list[requesters[0].getName()], 1);
   EXPECT_EQ(user_list[requesters[1].getName()], 1);
+}
+
+TEST_F(ManagerResourceRequesterTest, GetMavlinkEndpointListShouldReturnManagerRegisteredEndpoints)
+{
+  std::vector<std::string> returned_list = requesters[0].getMavlinkEndpointList();
+  EXPECT_EQ(returned_list.size(), ep_name_list.size());
+  for (auto& ep_name : returned_list) {
+    bool found = false;
+    for (auto& registered_name : ep_name_list) {
+      if (ep_name == registered_name) {
+        found = true;
+        break;
+      }
+    }
+    EXPECT_EQ(found, true);
+  }
+}
+
+TEST_F(ManagerResourceRequesterTest, GetMavlinkEndpointListShouldReflectNewlyAddedEndpoints)
+{
+  // The enumeration forwards to the manager, so adding an endpoint afterwards
+  // must be reflected by a subsequent call.
+  manager.addMavlinkEndpoint("m_ep5");
+  std::vector<std::string> returned_list = requesters[0].getMavlinkEndpointList();
+  EXPECT_EQ(returned_list.size(), ep_name_list.size() + 1);
+  bool found_new = false;
+  for (auto& ep_name : returned_list) {
+    if (ep_name == "m_ep5") {
+      found_new = true;
+      break;
+    }
+  }
+  EXPECT_EQ(found_new, true);
 }
 
 int main(int argc, char* argv[])
