@@ -181,6 +181,23 @@ target_link_libraries(MavlinkHubCliUiControllerTest
 )
 
 ##############################################################################
+##################     CliUiHandler Shutdown Test     ########################
+##############################################################################
+add_executable(MavlinkHubCliUiHandlerShutdownTest
+  test/app/ui_handler/cli_ui_handler_shutdown_test.cpp
+)
+target_include_directories(MavlinkHubCliUiHandlerShutdownTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+)
+target_link_libraries(MavlinkHubCliUiHandlerShutdownTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubCliUiHandler
+  PRIVATE MavlinkHubShutdownController
+  PRIVATE MavlinkHubMockAppService
+)
+
+##############################################################################
 ##############################     LibLoader     #############################
 ##############################################################################
 add_library(MavlinkHubLibLoader SHARED
