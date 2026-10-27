@@ -19,9 +19,12 @@ namespace pendarlab::app::mavlink_hub
     App& operator=(App&&) noexcept;
 
     /// Parse startup arguments, apply the startup config, run the CLI UI, and block until a
-    /// shutdown signal is received. The signal is driven by the CLI UI: when the user quits the
-    /// UI (or the UI thread ends), the CliUiHandler requests shutdown so this returns instead of
-    /// hanging.
+    /// shutdown signal is received. Shutdown is driven by two independent sources that both
+    /// wake the same wait: (1) the CLI UI — when the user quits the UI (or the UI thread ends),
+    /// the CliUiHandler requests shutdown; (2) a SIGINT/SIGTERM delivered to the process —
+    /// a dedicated sigwait() thread (started before the UI) requests shutdown instead of
+    /// letting FTXUI re-raise the signal and kill the process. Either source runs the normal
+    /// teardown path.
     /// @return 0 on clean shutdown, non-zero if startup failed (e.g. bad arguments or config).
     int run();
 
