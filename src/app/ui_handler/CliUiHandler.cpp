@@ -170,11 +170,49 @@ namespace pendarlab::app::mavlink_hub
       // clang-format on
     });
 
+    // Overview row: Agent List and Endpoint List tables (presentational only; the
+    // rows are placeholders until the data-driven display task fills them in).
+    const int overview_body_rows = 6;
+    const std::string blank_cell = "  ";
+    // clang-format off
+    Component overview_pane = Renderer([&] {
+      // Agent List table: Name | Type | Status | Report.
+      std::vector<std::vector<std::string>> agent_rows{
+        {"Name", "Type", "Status", "Report"},
+      };
+      for (int i = 0; i < overview_body_rows; ++i) {
+        agent_rows.push_back({blank_cell, blank_cell, blank_cell, blank_cell});
+      }
+      Table agent_table(agent_rows);
+      agent_table.SelectRow(0).Decorate(bold);
+      agent_table.SelectAll().SeparatorVertical(LIGHT);
+      agent_table.SelectRow(0).SeparatorHorizontal(LIGHT);
+
+      // Endpoint List table: Name | Type | Status.
+      std::vector<std::vector<std::string>> endpoint_rows{
+        {"Name", "Type", "Status"},
+      };
+      for (int i = 0; i < overview_body_rows; ++i) {
+        endpoint_rows.push_back({blank_cell, blank_cell, blank_cell});
+      }
+      Table endpoint_table(endpoint_rows);
+      endpoint_table.SelectRow(0).Decorate(bold);
+      endpoint_table.SelectAll().SeparatorVertical(LIGHT);
+      endpoint_table.SelectRow(0).SeparatorHorizontal(LIGHT);
+
+      return hbox(
+        vbox(text("Agent List") | bold | center, agent_table.Render()) | border | flex,
+        vbox(text("Endpoint List") | bold | center, endpoint_table.Render()) | border | flex
+      );
+    });
+    // clang-format on
+
     Component layout = Renderer(command_pane, [&] {
       // clang-format off
       return vbox({
                  text("Mavlink Hub UI") | bold | center | border,
                  hbox({ command_pane->Render() | border, command_result_pane->Render() | flex | border }) | flex,
+                 overview_pane->Render(),
                  text("Application Status: " + app_status) | border | notflex,
              }) | border;
       // clang-format on
