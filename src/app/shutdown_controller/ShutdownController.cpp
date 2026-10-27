@@ -26,7 +26,7 @@ namespace pendarlab::app::mavlink_hub
       std::lock_guard lock(d->mtx);
       d->shutdown_requested = true;
     }
-    d->cv.notify_one();
+    d->cv.notify_all();
   }
 
   void ShutdownController::waitForShutdownSignal()
