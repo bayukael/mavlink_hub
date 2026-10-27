@@ -36,10 +36,10 @@ namespace pendarlab::app::mavlink_hub
     // Resizable overview-table column widths (pixels), adjustable by dragging the
     // column separators. Persisted across renders for the UI session.
     int agent_name_w = 12;
-    int agent_type_w = 14;
-    int agent_status_w = 10;
-    int ep_name_w = 12;
-    int ep_type_w = 8;
+    int agent_name_type_w = 24;
+    int agent_report_w = 10;
+    int ep_type_status_w = 12;
+    int ep_status_w = 8;
 
     // Width (pixels) of the Agent List pane in the overview row; the Endpoint
     // List pane fills the rest. Dragging the boundary between them adjusts it.
@@ -228,21 +228,24 @@ namespace pendarlab::app::mavlink_hub
     Component agent_status_col = make_col(make_cells("Status", overview_body_rows));
     Component agent_report_col = make_col(make_cells("Report", overview_body_rows));
     Component agent_split = ResizableSplitLeft(
-        agent_name_col,
         ResizableSplitLeft(
+            agent_name_col,
             agent_type_col,
-            ResizableSplitLeft(agent_status_col, agent_report_col, &agent_status_w),
-            &agent_type_w),
-        &agent_name_w);
+            &agent_name_w),
+        ResizableSplitRight(
+            agent_report_col,
+            agent_status_col,
+            &agent_report_w),
+        &agent_name_type_w);
 
     // Endpoint List table columns: Name | Type | Status (Status fills the rest).
     Component ep_name_col   = make_col(make_cells("Name", overview_body_rows));
     Component ep_type_col   = make_col(make_cells("Type", overview_body_rows));
     Component ep_status_col = make_col(make_cells("Status", overview_body_rows));
-    Component endpoint_split = ResizableSplitLeft(
+    Component endpoint_split = ResizableSplitRight(
+        ResizableSplitRight(ep_status_col, ep_type_col, &ep_status_w),
         ep_name_col,
-        ResizableSplitLeft(ep_type_col, ep_status_col, &ep_type_w),
-        &ep_name_w);
+        &ep_type_status_w);
     // clang-format on
 
     // Build each table pane as a component that routes events to its inner column
