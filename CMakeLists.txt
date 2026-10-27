@@ -80,6 +80,21 @@ target_link_libraries(MavlinkHubShutdownController
 set_target_properties(MavlinkHubShutdownController PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_shutdown_controller)
 
 ##############################################################################
+########################     ShutdownController Test    #####################
+##############################################################################
+add_executable(MavlinkHubShutdownControllerTest
+  test/app/shutdown_controller/shutdown_controller_test.cpp
+)
+target_include_directories(MavlinkHubShutdownControllerTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubShutdownControllerTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubShutdownController
+  PRIVATE Threads::Threads
+)
+
+##############################################################################
 #########################     StartupArgsParser    #########################
 ##############################################################################
 add_library(MavlinkHubStartupArgsParser SHARED
