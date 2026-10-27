@@ -26,10 +26,10 @@ TEST_F(ArgsParserTest, NoArgsShouldReturnOkWithDefaultConfig)
 
   EXPECT_EQ(result.status, ParseResult::Status::Ok);
   ASSERT_TRUE(result.config.has_value());
-  EXPECT_TRUE(result.config->agent_lib_list.empty());
-  EXPECT_TRUE(result.config->transport_lib_list.empty());
-  EXPECT_TRUE(result.config->path_to_extra_lib_list.empty());
-  EXPECT_TRUE(result.config->path_to_startup_user_plan.empty());
+  EXPECT_EQ(true, result.config->agent_lib_list.empty());
+  EXPECT_EQ(true, result.config->transport_lib_list.empty());
+  EXPECT_EQ(true, result.config->path_to_extra_lib_list.empty());
+  EXPECT_EQ(true, result.config->path_to_startup_user_plan.empty());
 }
 
 TEST_F(ArgsParserTest, ValidConfigFileShouldReturnOkWithPopulatedConfig)

@@ -129,6 +129,21 @@ target_link_libraries(MavlinkHubCliUiController
 set_target_properties(MavlinkHubCliUiController PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_cli_ui_controller)
 
 ##############################################################################
+##########################     CliRoutine     ############################
+##############################################################################
+add_library(MavlinkHubCliRoutine SHARED
+  src/app/ui_handler/CliRoutine.cpp
+)
+target_include_directories(MavlinkHubCliRoutine PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubCliRoutine
+    PUBLIC MavlinkHubShutdownController
+)
+set_target_properties(MavlinkHubCliRoutine PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_cli_routine)
+
+##############################################################################
 ############################     CliUiHandler     ############################
 ##############################################################################
 add_library(MavlinkHubCliUiHandler SHARED
@@ -143,6 +158,7 @@ target_include_directories(MavlinkHubCliUiHandler PUBLIC
 target_link_libraries(MavlinkHubCliUiHandler
     PUBLIC pendarlab::MavlinkHubSdk
     PUBLIC MavlinkHubCliUiController
+    PUBLIC MavlinkHubCliRoutine
     PUBLIC Threads::Threads
 )
 set_target_properties(MavlinkHubCliUiHandler PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_cli_ui_handler)
@@ -181,20 +197,19 @@ target_link_libraries(MavlinkHubCliUiControllerTest
 )
 
 ##############################################################################
-##################     CliUiHandler Shutdown Test     ########################
+########################     CliRoutine Test     #############################
 ##############################################################################
-add_executable(MavlinkHubCliUiHandlerShutdownTest
-  test/app/ui_handler/cli_ui_handler_shutdown_test.cpp
+add_executable(MavlinkHubCliRoutineTest
+  test/app/ui_handler/cli_routine_test.cpp
 )
-target_include_directories(MavlinkHubCliUiHandlerShutdownTest PUBLIC 
+target_include_directories(MavlinkHubCliRoutineTest PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
 )
-target_link_libraries(MavlinkHubCliUiHandlerShutdownTest
+target_link_libraries(MavlinkHubCliRoutineTest
   PRIVATE gtest
-  PRIVATE MavlinkHubCliUiHandler
+  PRIVATE MavlinkHubCliRoutine
   PRIVATE MavlinkHubShutdownController
-  PRIVATE MavlinkHubMockAppService
 )
 
 ##############################################################################

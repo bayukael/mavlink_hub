@@ -37,7 +37,7 @@ TEST_F(CliUiControllerTest, NoCommandCommittedDispatchesNothing)
   EXPECT_EQ(controller->committedCommand(), -1);
   controller->executeCurrentCommand();
   controller->joinExecution();
-  EXPECT_TRUE(app_service.commands.empty());
+  EXPECT_EQ(true, app_service.commands.empty());
 }
 
 TEST_F(CliUiControllerTest, CommittedCommandWithOutOfRangeIndexDispatchesNothing)
@@ -45,7 +45,7 @@ TEST_F(CliUiControllerTest, CommittedCommandWithOutOfRangeIndexDispatchesNothing
   controller->commitCommand(12345);
   controller->executeCurrentCommand();
   controller->joinExecution();
-  EXPECT_TRUE(app_service.commands.empty());
+  EXPECT_EQ(true, app_service.commands.empty());
 }
 
 TEST_F(CliUiControllerTest, ExecuteDispatchesCommittedCommandTypeAndPayload)
@@ -69,7 +69,7 @@ TEST_F(CliUiControllerTest, StoresResultAfterExecution)
 
   auto result = controller->commandResult();
   ASSERT_TRUE(result.has_value());
-  EXPECT_TRUE(result->success);
+  EXPECT_EQ(true, result->success);
 }
 
 TEST_F(CliUiControllerTest, OnUpdateInvokedWhenCommandCompletes)
@@ -86,7 +86,7 @@ TEST_F(CliUiControllerTest, OnUpdateInvokedWhenCommandCompletes)
   controller->joinExecution();
 
   EXPECT_EQ(update_count.load(), 1);
-  EXPECT_FALSE(controller->executing());
+  EXPECT_EQ(false, controller->executing());
 }
 
 TEST_F(CliUiControllerTest, MarksExecutingWhileInFlightAndClearsAfter)
@@ -102,8 +102,8 @@ TEST_F(CliUiControllerTest, MarksExecutingWhileInFlightAndClearsAfter)
   observed_executing = controller->executing();
 
   controller->joinExecution();
-  EXPECT_TRUE(observed_executing);
-  EXPECT_FALSE(controller->executing());
+  EXPECT_EQ(true, observed_executing);
+  EXPECT_EQ(false, controller->executing());
 }
 
 TEST_F(CliUiControllerTest, IgnoresSecondExecuteWhileInFlight)
@@ -135,7 +135,7 @@ TEST_F(CliUiControllerTest, ClearPayloadEmptiesPayload)
 {
   controller->setPayload("some payload");
   controller->clearPayload();
-  EXPECT_TRUE(controller->payload().empty());
+  EXPECT_EQ(true, controller->payload().empty());
 }
 
 TEST_F(CliUiControllerTest, ClearResultEmptiesResult)
@@ -146,7 +146,7 @@ TEST_F(CliUiControllerTest, ClearResultEmptiesResult)
   ASSERT_TRUE(controller->commandResult().has_value());
 
   controller->clearResult();
-  EXPECT_FALSE(controller->commandResult().has_value());
+  EXPECT_EQ(false, controller->commandResult().has_value());
 }
 
 TEST_F(CliUiControllerTest, SelectionAndCommitAreStored)

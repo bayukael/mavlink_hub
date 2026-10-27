@@ -35,8 +35,8 @@ TEST_F(CommandDescriptorTest, NamesAreUniqueAndNonEmpty)
 {
   std::set<std::string> names;
   for (const auto& descriptor : commandDescriptors()) {
-    EXPECT_FALSE(descriptor.name.empty());
-    EXPECT_TRUE(names.insert(std::string(descriptor.name)).second) << "duplicate name: " << descriptor.name;
+    EXPECT_EQ(false, descriptor.name.empty());
+    EXPECT_EQ(true, names.insert(std::string(descriptor.name)).second) << "duplicate name: " << descriptor.name;
   }
   EXPECT_EQ(names.size(), commandDescriptors().size());
 }
@@ -45,7 +45,7 @@ TEST_F(CommandDescriptorTest, PayloadHintIsEmptyWhenNoPayloadRequired)
 {
   for (const auto& descriptor : commandDescriptors()) {
     if (!descriptor.requires_payload) {
-      EXPECT_TRUE(descriptor.payload_hint.empty()) << "hint should be empty for: " << descriptor.name;
+      EXPECT_EQ(true, descriptor.payload_hint.empty()) << "hint should be empty for: " << descriptor.name;
     }
   }
 }

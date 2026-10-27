@@ -1,37 +1,19 @@
 #include "app/ui_handler/CliUiHandler.h"
 
 #include "app/shutdown_controller/ShutdownController.h"
+#include "app/ui_handler/CliRoutine.h"
 #include "app/ui_handler/CliUiController.h"
 #include "common/types/OperationResult.h"
 
 #include <algorithm>
 #include <ftxui.hpp>
-#include <functional>
 #include <memory>
 #include <string>
 #include <thread>
-#include <utility>
 #include <vector>
 
 namespace pendarlab::app::mavlink_hub
 {
-  // RAII guard that fires requestShutdown() (latched/idempotent) when the scope it was
-  // created in is exited, whether by normal return, early return, or an exception unwinding
-  // the stack. This guarantees the shutdown signal always fires when the UI thread ends, so
-  // App::run() never hangs on waitForShutdownSignal() even if the UI thread ends abnormally.
-  class UiShutdownGuard
-  {
-  public:
-    explicit UiShutdownGuard(ShutdownController& controller) : shutdown_controller(controller) {}
-    ~UiShutdownGuard() { shutdown_controller.requestShutdown(); }
-
-    UiShutdownGuard(const UiShutdownGuard&) = delete;
-    UiShutdownGuard& operator=(const UiShutdownGuard&) = delete;
-
-  private:
-    ShutdownController& shutdown_controller;
-  };
-
   struct CliUiHandler::CliUiHandlerImpl {
     CliUiHandlerImpl(IAppService& appsrv, ShutdownController& shutdown_controller);
 
@@ -247,12 +229,6 @@ namespace pendarlab::app::mavlink_hub
   CliUiHandler::CliUiHandler(CliUiHandler&&) noexcept = default;
   CliUiHandler& CliUiHandler::operator=(CliUiHandler&&) noexcept = default;
 
-  void CliUiHandler::runWithShutdownGuard(std::function<void()> body)
-  {
-    UiShutdownGuard guard(d->shutdown_controller);
-    body();
-  }
-
   void CliUiHandler::start()
   {
     if (d->running) {
@@ -273,7 +249,14 @@ namespace pendarlab::app::mavlink_hub
       }
     });
 
-    d->ui_thread = std::thread([this] { runWithShutdownGuard([this] { d->generateUserInterface(); }); });
+    // Wrap the UI-generating function in a CliRoutine so that, when the UI
+    // thread exits (user quits) or ends abnormally (exception), shutdown is
+    // requested and App::run()'s waitForShutdownSignal() returns instead of
+    // hanging.
+    d->ui_thread = std::thread([this] {
+      CliRoutine routine(d->shutdown_controller, [this] { d->generateUserInterface(); });
+      routine.run();
+    });
   }
 
   void CliUiHandler::stop()
