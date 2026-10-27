@@ -174,36 +174,83 @@ namespace pendarlab::app::mavlink_hub
     // rows are placeholders until the data-driven display task fills them in).
     const int overview_body_rows = 6;
     const std::string blank_cell = "  ";
+    const int cell_padding = 2;
+    auto cell_width = [](std::size_t content_w) { return static_cast<int>(content_w) + cell_padding; };
     // clang-format off
+
     Component overview_pane = Renderer([&] {
-      // Agent List table: Name | Type | Status | Report.
-      std::vector<std::vector<std::string>> agent_rows{
-        {"Name", "Type", "Status", "Report"},
-      };
-      for (int i = 0; i < overview_body_rows; ++i) {
-        agent_rows.push_back({blank_cell, blank_cell, blank_cell, blank_cell});
-      }
-      Table agent_table(agent_rows);
-      agent_table.SelectRow(0).Decorate(bold);
-      agent_table.SelectAll().SeparatorVertical(LIGHT);
-      agent_table.SelectRow(0).SeparatorHorizontal(LIGHT);
+      // Fixed column widths (derived from content + padding) so every row aligns
+      // and the separators are straight, regardless of each cell's text.
+      const int agent_name_w   = cell_width(std::string("Name").size());
+      const int agent_type_w   = cell_width(std::string("Type").size());
+      const int agent_status_w = cell_width(std::string("Status").size());
+      const int ep_name_w      = cell_width(std::string("Name").size());
+      const int ep_type_w      = cell_width(std::string("Type").size());
+      const int ep_status_w    = cell_width(std::string("Status").size());
+      const std::string padding(cell_padding, ' ');
 
-      // Endpoint List table: Name | Type | Status.
-      std::vector<std::vector<std::string>> endpoint_rows{
-        {"Name", "Type", "Status"},
+      // Build one Agent List row. The Report column is flex so it stretches to
+      // fill the pane; the fixed Name/Type/Status columns keep separators aligned.
+      auto agent_row = [&](const std::string& name, const std::string& type,
+                           const std::string& status, const std::string& report,
+                           bool header) {
+        auto cell = [&](const std::string& t, int w) {
+          Element e = text(t);
+          if (header) {
+            e = std::move(e) | bold | center;
+          }
+          return e | size(WIDTH, EQUAL, w);
+        };
+        // clang-format off
+        return hbox({
+          cell(name, agent_name_w), separator(),
+          cell(type, agent_type_w), separator(),
+          cell(status, agent_status_w), separator(),
+          text(report) | center | xflex,
+        }) | xflex;
+        // clang-format on
       };
-      for (int i = 0; i < overview_body_rows; ++i) {
-        endpoint_rows.push_back({blank_cell, blank_cell, blank_cell});
-      }
-      Table endpoint_table(endpoint_rows);
-      endpoint_table.SelectRow(0).Decorate(bold);
-      endpoint_table.SelectAll().SeparatorVertical(LIGHT);
-      endpoint_table.SelectRow(0).SeparatorHorizontal(LIGHT);
+      // Endpoint List rows have one fewer column; the Status column stretches.
+      auto endpoint_row = [&](const std::string& name, const std::string& type,
+                              const std::string& status, bool header) {
+        auto cell = [&](const std::string& t, int w) {
+          Element e = text(t);
+          if (header) {
+            e = std::move(e) | bold | center;
+          }
+          return e | size(WIDTH, EQUAL, w);
+        };
+        // clang-format off
+        return hbox({
+          cell(name, ep_name_w), separator(),
+          cell(type, ep_type_w), separator(),
+          text(status) | center | xflex,
+        }) | xflex;
+        // clang-format on
+      };
 
+      Elements agent_rows;
+      agent_rows.push_back(agent_row("Name", "Type", "Status", "Report", true));
+      agent_rows.push_back(separator());
+      for (int i = 0; i < overview_body_rows; ++i) {
+        agent_rows.push_back(agent_row(blank_cell, blank_cell, blank_cell, padding, false));
+      }
+
+      Elements endpoint_rows;
+      endpoint_rows.push_back(endpoint_row("Name", "Type", "Status", true));
+      endpoint_rows.push_back(separator());
+      for (int i = 0; i < overview_body_rows; ++i) {
+        endpoint_rows.push_back(endpoint_row(blank_cell, blank_cell, padding, false));
+      }
+
+      auto agent_table = vbox(std::move(agent_rows));
+      auto endpoint_table = vbox(std::move(endpoint_rows));
+      // clang-format off
       return hbox(
-        vbox(text("Agent List") | bold | center, agent_table.Render()) | border | flex,
-        vbox(text("Endpoint List") | bold | center, endpoint_table.Render()) | border | flex
+        vbox(text("Agent List") | bold | center, separator(), agent_table, separator()) | border | flex,
+        vbox(text("Endpoint List") | bold | center, separator(), endpoint_table, separator()) | border | flex
       );
+      // clang-format on
     });
     // clang-format on
 
