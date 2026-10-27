@@ -24,9 +24,15 @@ namespace pendarlab::app::mavlink_hub
     /// @param routine_body the function that generates/renders the UI on the calling thread.
     CliRoutine(ShutdownController& shutdown_controller, std::function<void()> routine_body);
 
+    /// Fires requestShutdown() on the attached controller. CliRoutine is constructed and
+    /// destroyed on the same thread that runs the routine, so the destructor runs on that
+    /// thread when the routine ends — including during exception unwinding — keeping the
+    /// shutdown signal guaranteed on every exit path.
+    ~CliRoutine();
+
     /// Execute routine_body on the calling thread. On exit (normal return, early return, or an
-    /// exception unwinding the stack) requestShutdown() is fired on the attached controller, so
-    /// waitForShutdownSignal() can never hang.
+    /// exception unwinding the stack) the destructor requests shutdown on the attached
+    /// controller, so waitForShutdownSignal() can never hang.
     void run();
 
   private:
