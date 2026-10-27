@@ -41,6 +41,10 @@ namespace pendarlab::app::mavlink_hub
     int ep_name_w = 12;
     int ep_type_w = 8;
 
+    // Width (pixels) of the Agent List pane in the overview row; the Endpoint
+    // List pane fills the rest. Dragging the boundary between them adjusts it.
+    int overview_agent_width = 60;
+
     void generateUserInterface();
   };
 
@@ -241,20 +245,29 @@ namespace pendarlab::app::mavlink_hub
         &ep_name_w);
     // clang-format on
 
-    // Overview container joins the two resizable tables so their split separators
-    // receive mouse (drag) events. It is a routing child; rendering happens via the
-    // explicit agent_split/endpoint_split->Render() calls in the layout below.
-    Component overview_container = Container::Horizontal({ agent_split, endpoint_split });
+    // Build each table pane as a component that routes events to its inner column
+    // splits, wrapped in a titled, bordered panel. No flex here: the outer
+    // overview split sizes the agent pane (fixed) and the endpoint pane (fills).
+    Component agent_pane = Renderer(agent_split, [&] {
+      return vbox(text("Agent List") | bold | center, separator(), agent_split->Render()) | border;
+    });
+    Component endpoint_pane = Renderer(endpoint_split, [&] {
+      return vbox(text("Endpoint List") | bold | center, separator(), endpoint_split->Render()) | border;
+    });
 
-    Component layout = Renderer(Container::Vertical({ command_pane, overview_container }), [&] {
+    // Overview split keeps the agent/endpoint boundary draggable; the agent pane
+    // has a fixed width and the endpoint pane fills the rest.
+    Component overview_split = ResizableSplitLeft(agent_pane, endpoint_pane, &overview_agent_width);
+
+    // The overview splits are interactive children of the layout so their
+    // separators receive mouse (drag) events, while rendering stays in the custom
+    // vbox layout below.
+    Component layout = Renderer(Container::Vertical({ command_pane, overview_split }), [&] {
       // clang-format off
       return vbox({
                  text("Mavlink Hub UI") | bold | center | border,
                  hbox({ command_pane->Render() | border, command_result_pane->Render() | flex | border }) | flex,
-                 hbox(
-                   vbox(text("Agent List") | bold | center, separator(), agent_split->Render()) | border | flex,
-                   vbox(text("Endpoint List") | bold | center, separator(), endpoint_split->Render()) | border | flex
-                 ),
+                 overview_split->Render(),
                  text("Application Status: " + app_status) | border | notflex,
              }) | border;
       // clang-format on
