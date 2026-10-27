@@ -158,6 +158,14 @@ TEST_F(CliUiControllerTest, SelectionAndCommitAreStored)
   EXPECT_EQ(controller->committedCommand(), 5);
 }
 
+TEST_F(CliUiControllerTest, OverviewRowsDefaultToEmpty)
+{
+  // The view reads agent/endpoint rows from the controller; until the
+  // data/discovery wiring populates them they are empty.
+  EXPECT_TRUE(controller->agentRows().empty());
+  EXPECT_TRUE(controller->endpointRows().empty());
+}
+
 int main(int argc, char** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);

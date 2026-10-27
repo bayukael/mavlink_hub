@@ -182,28 +182,28 @@ namespace pendarlab::app::mavlink_hub
       // clang-format on
     });
 
-    // Overview row: Agent List and Endpoint List tables (presentational only; the
-    // rows are placeholders until the data-driven display task fills them in).
-    // Each table is a chain of ftxui ResizableSplit components: every column is a
-    // vertical stack of its cells, and the user can drag a column separator to
-    // resize that column. Column widths are kept in the impl members so the
-    // user's chosen sizes persist for the whole UI session.
-    const int overview_body_rows = 6;
-    const std::string blank_cell = "  ";
+    // Overview row: Agent List and Endpoint List tables. The renderer consumes the
+    // row data exposed by the controller (agentRows()/endpointRows()) so the view
+    // never needs to change when the data source is wired in. Each table is a chain
+    // of ftxui ResizableSplit components: every column is a vertical stack of its
+    // cells, and the user can drag a column separator to resize that column.
+    // Column widths are kept in the impl members so the user's chosen sizes persist
+    // for the whole UI session.
     // clang-format off
 
-    // Render one column: a vertical stack of cells with a bold, centered header
-    // on top and a horizontal separator under it. Body cells are left-aligned.
-    auto make_col = [](std::vector<std::string> cells) -> Component {
-      return Renderer([cells = std::move(cells)] {
+    // Render one column: a bold, centered header with a horizontal separator under
+    // it, then one body cell per data value. Body cells are left-aligned by default;
+    // pass dim_bodies to render them dimmed (used for the "(empty)" marker row).
+    auto make_col = [](const std::string& header, std::function<std::vector<std::string>()> body,
+                       bool dim_bodies = false) -> Component {
+      return Renderer([header, body = std::move(body), dim_bodies] {
         Elements el;
-        for (std::size_t i = 0; i < cells.size(); ++i) {
-          if (i == 1) {
-            el.push_back(separator());
-          }
-          Element t = text(cells[i]);
-          if (i == 0) {
-            t = std::move(t) | bold | center;
+        el.push_back(text(header) | bold | center);
+        el.push_back(separator());
+        for (const std::string& v : body()) {
+          Element t = text(v);
+          if (dim_bodies) {
+            t = std::move(t) | dim;
           }
           el.push_back(std::move(t));
         }
@@ -211,22 +211,30 @@ namespace pendarlab::app::mavlink_hub
       });
     };
 
-    // Column cells: a header followed by `n` placeholder body cells.
-    auto make_cells = [&](const std::string& header, int n) {
-      std::vector<std::string> c;
-      c.reserve(n + 1);
-      c.push_back(header);
-      for (int i = 0; i < n; ++i) {
-        c.push_back(blank_cell);
+    // Body cells for one column of a table. When the list is empty the first column
+    // (is_marker_col) yields a single dim "(empty)" row and the others yield a blank,
+    // so the table reads as intentionally empty.
+    auto col_body = [&](const std::vector<OverviewRow>& rows, const std::string OverviewRow::* field,
+                        bool is_marker_col) {
+      std::vector<std::string> body;
+      if (rows.empty()) {
+        body.push_back(is_marker_col ? std::string("(empty)") : std::string());
+      } else {
+        body.reserve(rows.size());
+        for (const auto& row : rows) {
+          body.push_back(row.*field);
+        }
       }
-      return c;
+      return body;
     };
 
-    // Agent List table columns: Name | Type | Status | Report (Report fills the rest).
-    Component agent_name_col   = make_col(make_cells("Name", overview_body_rows));
-    Component agent_type_col   = make_col(make_cells("Type", overview_body_rows));
-    Component agent_status_col = make_col(make_cells("Status", overview_body_rows));
-    Component agent_report_col = make_col(make_cells("Report", overview_body_rows));
+    const std::vector<OverviewRow>& agent_rows = controller.agentRows();
+    const bool agent_empty = agent_rows.empty();
+    // Agent List table columns: Name | Type | Status | Report.
+    Component agent_name_col   = make_col("Name",   [&] { return col_body(agent_rows, &OverviewRow::name,   true); }, agent_empty);
+    Component agent_type_col   = make_col("Type",   [&] { return col_body(agent_rows, &OverviewRow::type,   false); }, agent_empty);
+    Component agent_status_col = make_col("Status", [&] { return col_body(agent_rows, &OverviewRow::status, false); }, agent_empty);
+    Component agent_report_col = make_col("Report", [&] { return col_body(agent_rows, &OverviewRow::report, false); }, agent_empty);
     Component agent_split = ResizableSplitLeft(
         ResizableSplitLeft(
             agent_name_col,
@@ -238,10 +246,12 @@ namespace pendarlab::app::mavlink_hub
             &agent_report_w),
         &agent_name_type_w);
 
+    const std::vector<OverviewRow>& endpoint_rows = controller.endpointRows();
+    const bool endpoint_empty = endpoint_rows.empty();
     // Endpoint List table columns: Name | Type | Status (Status fills the rest).
-    Component ep_name_col   = make_col(make_cells("Name", overview_body_rows));
-    Component ep_type_col   = make_col(make_cells("Type", overview_body_rows));
-    Component ep_status_col = make_col(make_cells("Status", overview_body_rows));
+    Component ep_name_col   = make_col("Name",   [&] { return col_body(endpoint_rows, &OverviewRow::name,   true); }, endpoint_empty);
+    Component ep_type_col   = make_col("Type",   [&] { return col_body(endpoint_rows, &OverviewRow::type,   false); }, endpoint_empty);
+    Component ep_status_col = make_col("Status", [&] { return col_body(endpoint_rows, &OverviewRow::status, false); }, endpoint_empty);
     Component endpoint_split = ResizableSplitRight(
         ResizableSplitRight(ep_status_col, ep_type_col, &ep_status_w),
         ep_name_col,

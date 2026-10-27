@@ -12,6 +12,19 @@
 
 namespace pendarlab::app::mavlink_hub
 {
+  /// One row in an overview table (endpoint list or agent list). The fields map
+  /// to the columns rendered by the CLI view: name, type, and status for both;
+  /// report is only meaningful for agents (endpoints have no report and leave it
+  /// empty). The view renders these as-is; it neither parses nor reformats the
+  /// report text.
+  struct OverviewRow
+  {
+    std::string name;
+    std::string type;
+    std::string status;
+    std::string report;
+  };
+
   // Holds the state and actions of the CLI UI, independent of any rendering
   // framework. This is the unit-testable core: it loads command descriptors
   // from an IAppService, tracks the selected/committed command and payload,
@@ -76,6 +89,14 @@ namespace pendarlab::app::mavlink_hub
 
     /// Clear the stored command result.
     void clearResult();
+
+    /// @return the rows to render in the Agent List overview table. Populated by
+    ///         the data/discovery wiring; the view consumes this as-is.
+    const std::vector<OverviewRow>& agentRows() const;
+
+    /// @return the rows to render in the Endpoint List overview table. Populated
+    ///         by the data/discovery wiring; the view consumes this as-is.
+    const std::vector<OverviewRow>& endpointRows() const;
 
     // Registers a callback invoked (from the worker thread) whenever the
     // observable state changes asynchronously, e.g. when a command finishes
