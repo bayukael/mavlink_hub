@@ -33,6 +33,14 @@ namespace pendarlab::app::mavlink_hub
     bool running = false;
     std::thread ui_thread;
 
+    // Resizable overview-table column widths (pixels), adjustable by dragging the
+    // column separators. Persisted across renders for the UI session.
+    int agent_name_w = 12;
+    int agent_type_w = 14;
+    int agent_status_w = 10;
+    int ep_name_w = 12;
+    int ep_type_w = 8;
+
     void generateUserInterface();
   };
 
@@ -172,94 +180,81 @@ namespace pendarlab::app::mavlink_hub
 
     // Overview row: Agent List and Endpoint List tables (presentational only; the
     // rows are placeholders until the data-driven display task fills them in).
+    // Each table is a chain of ftxui ResizableSplit components: every column is a
+    // vertical stack of its cells, and the user can drag a column separator to
+    // resize that column. Column widths are kept in the impl members so the
+    // user's chosen sizes persist for the whole UI session.
     const int overview_body_rows = 6;
     const std::string blank_cell = "  ";
-    const int cell_padding = 2;
-    auto cell_width = [](std::size_t content_w) { return static_cast<int>(content_w) + cell_padding; };
     // clang-format off
 
-    Component overview_pane = Renderer([&] {
-      // Fixed column widths (derived from content + padding) so every row aligns
-      // and the separators are straight, regardless of each cell's text.
-      const int agent_name_w   = cell_width(std::string("Name").size());
-      const int agent_type_w   = cell_width(std::string("Type").size());
-      const int agent_status_w = cell_width(std::string("Status").size());
-      const int ep_name_w      = cell_width(std::string("Name").size());
-      const int ep_type_w      = cell_width(std::string("Type").size());
-      const int ep_status_w    = cell_width(std::string("Status").size());
-      const std::string padding(cell_padding, ' ');
-
-      // Build one Agent List row. The Report column is flex so it stretches to
-      // fill the pane; the fixed Name/Type/Status columns keep separators aligned.
-      auto agent_row = [&](const std::string& name, const std::string& type,
-                           const std::string& status, const std::string& report,
-                           bool header) {
-        auto cell = [&](const std::string& t, int w) {
-          Element e = text(t);
-          if (header) {
-            e = std::move(e) | bold | center;
+    // Render one column: a vertical stack of cells with a bold, centered header
+    // on top and a horizontal separator under it. Body cells are left-aligned.
+    auto make_col = [](std::vector<std::string> cells) -> Component {
+      return Renderer([cells = std::move(cells)] {
+        Elements el;
+        for (std::size_t i = 0; i < cells.size(); ++i) {
+          if (i == 1) {
+            el.push_back(separator());
           }
-          return e | size(WIDTH, EQUAL, w);
-        };
-        // clang-format off
-        return hbox({
-          cell(name, agent_name_w), separator(),
-          cell(type, agent_type_w), separator(),
-          cell(status, agent_status_w), separator(),
-          text(report) | center | xflex,
-        }) | xflex;
-        // clang-format on
-      };
-      // Endpoint List rows have one fewer column; the Status column stretches.
-      auto endpoint_row = [&](const std::string& name, const std::string& type,
-                              const std::string& status, bool header) {
-        auto cell = [&](const std::string& t, int w) {
-          Element e = text(t);
-          if (header) {
-            e = std::move(e) | bold | center;
+          Element t = text(cells[i]);
+          if (i == 0) {
+            t = std::move(t) | bold | center;
           }
-          return e | size(WIDTH, EQUAL, w);
-        };
-        // clang-format off
-        return hbox({
-          cell(name, ep_name_w), separator(),
-          cell(type, ep_type_w), separator(),
-          text(status) | center | xflex,
-        }) | xflex;
-        // clang-format on
-      };
+          el.push_back(std::move(t));
+        }
+        return vbox(std::move(el));
+      });
+    };
 
-      Elements agent_rows;
-      agent_rows.push_back(agent_row("Name", "Type", "Status", "Report", true));
-      agent_rows.push_back(separator());
-      for (int i = 0; i < overview_body_rows; ++i) {
-        agent_rows.push_back(agent_row(blank_cell, blank_cell, blank_cell, padding, false));
+    // Column cells: a header followed by `n` placeholder body cells.
+    auto make_cells = [&](const std::string& header, int n) {
+      std::vector<std::string> c;
+      c.reserve(n + 1);
+      c.push_back(header);
+      for (int i = 0; i < n; ++i) {
+        c.push_back(blank_cell);
       }
+      return c;
+    };
 
-      Elements endpoint_rows;
-      endpoint_rows.push_back(endpoint_row("Name", "Type", "Status", true));
-      endpoint_rows.push_back(separator());
-      for (int i = 0; i < overview_body_rows; ++i) {
-        endpoint_rows.push_back(endpoint_row(blank_cell, blank_cell, padding, false));
-      }
+    // Agent List table columns: Name | Type | Status | Report (Report fills the rest).
+    Component agent_name_col   = make_col(make_cells("Name", overview_body_rows));
+    Component agent_type_col   = make_col(make_cells("Type", overview_body_rows));
+    Component agent_status_col = make_col(make_cells("Status", overview_body_rows));
+    Component agent_report_col = make_col(make_cells("Report", overview_body_rows));
+    Component agent_split = ResizableSplitLeft(
+        agent_name_col,
+        ResizableSplitLeft(
+            agent_type_col,
+            ResizableSplitLeft(agent_status_col, agent_report_col, &agent_status_w),
+            &agent_type_w),
+        &agent_name_w);
 
-      auto agent_table = vbox(std::move(agent_rows));
-      auto endpoint_table = vbox(std::move(endpoint_rows));
-      // clang-format off
-      return hbox(
-        vbox(text("Agent List") | bold | center, separator(), agent_table, separator()) | border | flex,
-        vbox(text("Endpoint List") | bold | center, separator(), endpoint_table, separator()) | border | flex
-      );
-      // clang-format on
-    });
+    // Endpoint List table columns: Name | Type | Status (Status fills the rest).
+    Component ep_name_col   = make_col(make_cells("Name", overview_body_rows));
+    Component ep_type_col   = make_col(make_cells("Type", overview_body_rows));
+    Component ep_status_col = make_col(make_cells("Status", overview_body_rows));
+    Component endpoint_split = ResizableSplitLeft(
+        ep_name_col,
+        ResizableSplitLeft(ep_type_col, ep_status_col, &ep_type_w),
+        &ep_name_w);
     // clang-format on
 
-    Component layout = Renderer(command_pane, [&] {
+    // Overview container joins the two resizable tables so their split separators
+    // receive mouse (drag) events. It is a routing child; rendering happens via the
+    // explicit agent_split/endpoint_split->Render() calls in the layout below.
+    Component overview_container = Container::Horizontal({ agent_split, endpoint_split });
+
+    Component layout = Renderer(Container::Vertical({ command_pane, overview_container }), [&] {
       // clang-format off
       return vbox({
                  text("Mavlink Hub UI") | bold | center | border,
                  hbox({ command_pane->Render() | border, command_result_pane->Render() | flex | border }) | flex,
-                 overview_pane->Render(),
+                 hbox(
+                   vbox(text("Agent List") | bold | center, separator(), agent_split->Render()) | border | flex,
+                   vbox(text("Endpoint List") | bold | center, separator(), endpoint_split->Render()) | border | flex
+                 ),
                  text("Application Status: " + app_status) | border | notflex,
              }) | border;
       // clang-format on
