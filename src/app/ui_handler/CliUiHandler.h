@@ -1,6 +1,7 @@
 #pragma once
 
 #include "app/app_service/IAppService.h"
+#include "app/shutdown_controller/ShutdownController.h"
 #include "common/types/OperationResult.h"
 
 #include <memory>
@@ -12,11 +13,19 @@ namespace pendarlab::app::mavlink_hub
   /// Owns a CliUiController and runs a UI thread that blocks on the FTXUI event loop. It
   /// binds the controller's state to the rendered component tree and wires up the redraw
   /// callback so completed commands refresh the UI automatically.
+  ///
+  /// The UI thread also drives the ShutdownController: when the UI thread function exits
+  /// (the user quits the UI, or the thread ends abnormally), it requests shutdown so a
+  /// caller waiting on waitForShutdownSignal() (e.g. App::run()) returns instead of
+  /// hanging. The signal is fired on every exit path via CliRoutine, not just the normal
+  /// quit path.
   class CliUiHandler
   {
   public:
     /// @param appsrv the service backing the UI's controller. Must outlive this handler.
-    CliUiHandler(IAppService& appsrv);
+    /// @param shutdown_controller the controller to request shutdown on when the UI thread
+    ///        ends. Must outlive this handler.
+    CliUiHandler(IAppService& appsrv, ShutdownController& shutdown_controller);
     ~CliUiHandler();
     CliUiHandler(CliUiHandler&&) noexcept;
     CliUiHandler& operator=(CliUiHandler&&) noexcept;

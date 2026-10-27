@@ -42,7 +42,7 @@ namespace pendarlab::app::mavlink_hub
       lib_loader(agent_registry, transport_registry),
       manager(*agent_registry_user, *transport_registry_user),
       app_service(manager, lib_loader),
-      cli_handler(app_service)
+      cli_handler(app_service, shutdown_controller)
   {
   }
 
