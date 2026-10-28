@@ -49,7 +49,7 @@ There are no lint/format targets; building and running the tests is the only ver
 
 ## Usage
 
-The `mavlink_hub` main executable target is currently **commented out** in `CMakeLists.txt`; only the libraries and tests build. When enabled, the executable is configured from a JSON config file and driven through the CLI UI:
+The `mavlink_hub` main executable is built from the `mavlink_hub` target in `CMakeLists.txt` (entry point: `src/main.cpp`). It is configured from a JSON config file and driven through the CLI UI:
 
 - **Config file** (`-c/--config <path>`) — JSON describing the agent and transport libraries to load at startup (keyed by registration name), an optional extra-libraries file, and an optional startup user plan (with a flag to apply it on startup). See `AppConfig` in `src/app/types/AppConfig.h`.
 
@@ -68,5 +68,5 @@ The project is mid-development. Notable gaps (detailed in `docs/ARCHITECTURE.md`
 
 - `AppService::executeCommand` has many stub cases.
 - `include/mavlink_hub/` is reserved for future public/installed headers and is currently empty.
-- The `mavlink_hub` main executable and `HttpRequestHandler` are planned but not yet active.
+- The `HttpRequestHandler` is planned but not yet active.
 - `CliUiHandler::getResult()` is a stub.

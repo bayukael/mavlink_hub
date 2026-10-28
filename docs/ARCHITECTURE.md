@@ -420,7 +420,7 @@ mavlink_hub/
 ├── include/mavlink_hub/           # reserved for public/installed headers (currently empty)
 ├── resources/json_schemas/        # JSON schemas for user-command payloads
 ├── src/
-│   ├── main.cpp                   # entry point (main executable target is commented out)
+│   ├── main.cpp                   # entry point (mavlink_hub executable target)
 │   ├── agent_registry/            # AgentRegistry + Admin/User access
 │   ├── manager/                   # Manager, plan execution, endpoint users
 │   │   └── mavlink_endpoint_user/ # MavlinkEndpointUser (agent-facing endpoint handle)
@@ -462,9 +462,10 @@ per-target include dirs.
 | `MavlinkHubJsonUtils` | `pendarlab-mavlink_hub_json_utils` | SDK, MavlinkEndpoint, jsoncons |
 | `MavlinkHubAppService` | `pendarlab-mavlink_hub_app_service` | ShutdownController, ArgsParser, CliUiHandler, LibLoader, JsonUtils, SDK |
 | `MavlinkHubApp` | `pendarlab-mavlink_hub_app` | Manager, ShutdownController, SignalHandler, ArgsParser, AppConfigurator, CliUiHandler, AppService, SDK |
+| `mavlink_hub` (executable) | `mavlink_hub` | MavlinkHubApp |
 
-The `mavlink_hub` main executable target is **commented out** in `CMakeLists.txt`; only
-libraries + tests build.
+The `mavlink_hub` main executable target (`mavlink_hub`, from `src/main.cpp`, linking `MavlinkHubApp`)
+builds alongside the libraries and tests.
 
 ---
 
@@ -509,5 +510,5 @@ The project is mid-development. Notable observations:
   removal; `removeAgent` does not stop the agent before erasing (state is just recorded).
 - `AgentRegistry` stores non-owning `reference_wrapper<const AgentDefinition>` — definitions
   are owned by plugin libraries, so unloading a plugin could dangle the references.
-- The `mavlink_hub` main executable and `HttpRequestHandler` are planned but not yet active.
+- The `HttpRequestHandler` is planned but not yet active.
 - `CliUiHandler::getResult()` is a stub.
