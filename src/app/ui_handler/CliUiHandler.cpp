@@ -37,13 +37,13 @@ namespace pendarlab::app::mavlink_hub
     // column separators. Persisted across renders for the UI session.
     int agent_name_w = 12;
     int agent_name_type_w = 24;
-    int agent_report_w = 10;
-    int ep_type_status_w = 12;
-    int ep_status_w = 8;
+    int agent_name_type_status_w = 36;
+    int ep_type_status_w = 22;
+    int ep_status_w = 14;
 
     // Width (pixels) of the Agent List pane in the overview row; the Endpoint
     // List pane fills the rest. Dragging the boundary between them adjusts it.
-    int overview_agent_width = 60;
+    int overview_agent_width = 70;
 
     void generateUserInterface();
   };
@@ -237,14 +237,14 @@ namespace pendarlab::app::mavlink_hub
     Component agent_report_col = make_col("Report", [&] { return col_body(agent_rows, &OverviewRow::report, false); }, agent_empty);
     Component agent_split = ResizableSplitLeft(
         ResizableSplitLeft(
-            agent_name_col,
-            agent_type_col,
-            &agent_name_w),
-        ResizableSplitRight(
-            agent_report_col,
+            ResizableSplitLeft(
+                agent_name_col,
+                agent_type_col,
+                &agent_name_w),
             agent_status_col,
-            &agent_report_w),
-        &agent_name_type_w);
+            &agent_name_type_w),
+        agent_report_col,
+        &agent_name_type_status_w);
 
     const std::vector<OverviewRow>& endpoint_rows = controller.endpointRows();
     const bool endpoint_empty = endpoint_rows.empty();
