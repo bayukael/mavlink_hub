@@ -248,7 +248,7 @@ namespace pendarlab::app::mavlink_hub
 
     const std::vector<OverviewRow>& endpoint_rows = controller.endpointRows();
     const bool endpoint_empty = endpoint_rows.empty();
-    // Endpoint List table columns: Name | Type | Status (Status fills the rest).
+    // Endpoint List table columns: Name | Type | Status (Name fills the rest).
     Component ep_name_col   = make_col("Name",   [&] { return col_body(endpoint_rows, &OverviewRow::name,   true); }, endpoint_empty);
     Component ep_type_col   = make_col("Type",   [&] { return col_body(endpoint_rows, &OverviewRow::type,   false); }, endpoint_empty);
     Component ep_status_col = make_col("Status", [&] { return col_body(endpoint_rows, &OverviewRow::status, false); }, endpoint_empty);
