@@ -1,0 +1,18 @@
+{
+  "agent_lib_list": [
+    {
+      "name": "gz_agent",
+      "path": "/opt/pendarlab/lib/libmavlink_hub_gz_agent.so",
+      "sym": "getGzAgentDefinition"
+    }
+  ],
+  "transport_lib_list": [
+    {
+      "name": "SerialByteTransport",
+      "path": "/opt/pendarlab/lib/libpendarlab-serial_byte_transport.so",
+      "sym": "getSerialByteTransportDefinition"
+    }
+  ],
+  "path_to_startup_user_plan": "user_plan_best_effort.json",
+  "apply_user_plan_on_startup": true
+}
