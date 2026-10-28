@@ -334,22 +334,21 @@ target_link_libraries(MavlinkHubApp
 )
 set_target_properties(MavlinkHubApp PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_app)
 
-# ##############################################################################
-# ################################     Main     ################################
-# ##############################################################################
-# add_executable(mavlink_hub 
-#   src/main.cpp
-# )
-# target_include_directories(mavlink_hub PUBLIC 
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
-#     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external>
-# )
-# target_compile_options(mavlink_hub
-#   PRIVATE -Wno-address-of-packed-member
-# )
-# target_link_libraries(mavlink_hub
-#   PRIVATE mavlink_hub_app
-# )
+##############################################################################
+################################     Main     ################################
+##############################################################################
+add_executable(mavlink_hub
+  src/main.cpp
+)
+target_include_directories(mavlink_hub PRIVATE
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_compile_options(mavlink_hub
+  PRIVATE -Wno-address-of-packed-member
+)
+target_link_libraries(mavlink_hub
+  PRIVATE MavlinkHubApp
+)
 
 ##############################################################################
 #############################     MockAgent    ###############################
