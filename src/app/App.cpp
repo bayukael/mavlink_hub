@@ -5,6 +5,7 @@
 #include "app/app_service/AppService.h"
 #include "app/lib_loader/LibLoader.h"
 #include "app/shutdown_controller/ShutdownController.h"
+#include "app/signal_handler/SignalHandler.h"
 #include "app/startup/AppConfigurator.h"
 #include "app/startup/ArgsParser.h"
 #include "app/ui_handler/CliUiHandler.h"
@@ -12,6 +13,7 @@
 
 #include <byte_transport/Registry.h>
 #include <byte_transport/RegistryUser.h>
+#include <csignal>
 #include <memory>
 
 namespace pendarlab::app::mavlink_hub
@@ -32,6 +34,7 @@ namespace pendarlab::app::mavlink_hub
     Manager manager;
     AppService app_service;
     CliUiHandler cli_handler;
+    std::unique_ptr<SignalHandler> signal_handler;
   };
 
   App::AppImpl::AppImpl(int c, char** v) :
@@ -42,7 +45,8 @@ namespace pendarlab::app::mavlink_hub
       lib_loader(agent_registry, transport_registry),
       manager(*agent_registry_user, *transport_registry_user),
       app_service(manager, lib_loader),
-      cli_handler(app_service, shutdown_controller)
+      cli_handler(app_service, shutdown_controller),
+      signal_handler(std::make_unique<SignalHandler>(shutdown_controller, std::vector<int>{ SIGINT, SIGTERM }))
   {
   }
 
@@ -69,6 +73,13 @@ namespace pendarlab::app::mavlink_hub
 
     startup::applyConfig(parse_result.config.value(), d->lib_loader, d->app_service);
 
+    // Take ownership of SIGINT/SIGTERM BEFORE the UI thread starts: this blocks
+    // those signals in this thread (inherited by the UI thread) and runs a
+    // dedicated sigwait() thread that calls requestShutdown(), so a signal
+    // triggers App::run()'s normal teardown instead of FTXUI's re-raise-and-die
+    // path. See SignalHandler docs.
+    d->signal_handler->start();
+
     d->cli_handler.start();
     // HttpRequestHandler also?
 
@@ -76,6 +87,8 @@ namespace pendarlab::app::mavlink_hub
 
     d->cli_handler.stop();
     // HttpRequestHandler also?
+
+    d->signal_handler->stop();
 
     return 0;
   }

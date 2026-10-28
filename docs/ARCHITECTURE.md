@@ -252,9 +252,15 @@ flowchart TB
 1. `startup::parseArgs(argc, argv)` → `AppConfig` (or help/fatal-error exit).
 2. `startup::applyConfig(config, lib_loader, app_service)` — loads plugins, optionally
    loads/applies a startup plan.
-3. `cli_handler.start()` — spawns the ftxui UI thread.
-4. `shutdown_controller.waitForShutdownSignal()` — blocks the main thread.
-5. `cli_handler.stop()` — joins the UI thread, returns `0`.
+3. `signal_handler.start()` — blocks SIGINT/SIGTERM in the main thread and launches a
+   dedicated `sigwait()` thread, *before* the UI thread exists, so it takes precedence over
+   FTXUI's own signal handlers.
+4. `cli_handler.start()` — spawns the ftxui UI thread.
+5. `shutdown_controller.waitForShutdownSignal()` — blocks the main thread until shutdown is
+   requested (by the CLI quit path or by a SIGINT/SIGTERM handled by the signal thread).
+6. `cli_handler.stop()` — joins the UI thread (restores the terminal via FTXUI's cooperative
+   `App::Exit()` path), returns `0`.
+7. `signal_handler.stop()` — joins the `sigwait()` thread and restores the signal mask.
 
 A commented-out `HttpRequestHandler` in `App::run` indicates a planned second UI/command
 handler.
@@ -279,21 +285,68 @@ Startup is split into an argument parser and an app configurator.
   libraries via the `LibLoader`, optionally loads a startup plan, and (if configured) applies
   it. Function: `applyConfig(config, lib_loader, app_service)`.
 
-#### 3.2.4 ShutdownController
-
-A cross-thread coordination primitive (`std::mutex` + `condition_variable`) that keeps the main
-thread alive while the UI runs on its own thread.
-
-- `requestShutdown` — signal that shutdown is requested.
-- `waitForShutdownSignal` — block until shutdown is requested.
-
-#### 3.2.5 LibLoader
+#### 3.2.4 LibLoader
 
 Loads agent and transport plugin shared libraries at runtime (`dlopen`) and registers their
 definitions into the registries using **admin** access. `LibInfo` (`{ name, path, sym }`)
 describes a plugin to load.
 
 - `loadAgentLib`, `loadTransportLib` — load a plugin library and register its definition.
+
+#### 3.2.5 SignalHandler
+
+Owns SIGINT/SIGTERM so the process can shut down gracefully, instead of dying to a re-raised
+signal through FTXUI's own handlers. It is a dedicated, opt-in component:
+
+- `start` — blocks the handled signals in the calling thread (so every thread created
+  afterwards, including the FTXUI UI thread, inherits them blocked) and launches a thread that
+  blocks in `sigwait()`. When a termination signal arrives it is consumed by `sigwait()` (never
+  by a handler) and `requestShutdown()` is called from that normal thread context, so it is safe
+  to lock a mutex here (no async-signal-safety issue).
+- `stop` — wakes and joins the `sigwait()` thread and restores the calling thread's signal mask.
+
+Because the signals are blocked everywhere, FTXUI's `RecordSignal` handler never runs, so its
+re-raise-and-die exit path is bypassed; instead the cooperative `cli_handler.stop()` →
+`App::Exit()` path restores the terminal. See the Shutdown & Exit Policy (§3.2.7). The wiring is
+opt-in — only `App::run()` starts it, so it stays off in unit-test and shared-library contexts.
+
+#### 3.2.6 ShutdownController (extended note)
+
+The `ShutdownController` is a single-latch primitive (`std::mutex` + `condition_variable`). It
+is now driven by **two independent OR-style producers**: the CLI UI (user quits / UI thread
+ends) and the `SignalHandler` (a SIGINT/SIGTERM delivered to the process). Both call
+`requestShutdown()` and wake the same `waitForShutdownSignal()`. It composes unchanged — no
+multi-producer machinery was added.
+
+- `requestShutdown` — signal that shutdown is requested.
+- `waitForShutdownSignal` — block until shutdown is requested.
+
+#### 3.2.7 Shutdown & Exit Policy
+
+`mavlink_hub` always exits through the same cooperative teardown regardless of what triggered
+shutdown:
+
+- **CLI quit = app exit.** When the user quits the UI (or the UI thread ends abnormally), the
+  `CliUiHandler`/`CliRoutine` calls `requestShutdown()`. This is the original shutdown trigger.
+- **SIGINT/SIGTERM.** A `SIGINT` or `SIGTERM` delivered to the process (e.g. `kill -TERM <pid>`)
+  is handled by the `SignalHandler` `sigwait()` thread, which also calls `requestShutdown()`.
+  This is a second, independent trigger on the same latch.
+- **Coordination with FTXUI.** `App::run()` starts the `SignalHandler` *before*
+  `cli_handler.start()`, so the signals are blocked in this thread (and inherited by the UI
+  thread) before FTXUI installs its own handlers. FTXUI may still install `RecordSignal`, but
+  because the signals are blocked everywhere, the handler never runs; `sigwait()` consumes the
+  signal instead, so FTXUI's "re-raise and die" path (which would kill the process with e.g.
+  130 for SIGINT without running teardown) is never taken.
+- **Teardown order (the same, from any trigger):**
+  1. `shutdown_controller.waitForShutdownSignal()` returns.
+  2. `cli_handler.stop()` — waits for any in-flight command, then `App::Exit()` posts an exit to
+     the UI loop, whose clean `PostMain()`/`Uninstall()` restores the terminal (raw mode off,
+     normal screen, original termios).
+  3. `signal_handler.stop()` — wakes/joins the `sigwait()` thread and restores the signal mask.
+  4. `App::run()` returns `0`, so the process exits cleanly.
+
+Note: signal handling is deliberately **off** unless explicitly enabled (only the application
+path, `App::run()`, starts it), so the unit-test and shared-library contexts are never affected.
 
 ### 3.3 UI Component
 
@@ -375,6 +428,7 @@ mavlink_hub/
 │   │   ├── app_service/
 │   │   ├── lib_loader/
 │   │   ├── shutdown_controller/
+│   │   ├── signal_handler/
 │   │   ├── startup/
 │   │   ├── types/
 │   │   └── ui_handler/
@@ -399,6 +453,7 @@ per-target include dirs.
 | `MavlinkHubAgentRegistry` | `pendarlab-mavlink_hub_agent_registry` | SDK |
 | `MavlinkHubManager` | `pendarlab-mavlink_hub_manager` | SDK, MavlinkEndpoint, AgentRegistry |
 | `MavlinkHubShutdownController` | `pendarlab-mavlink_hub_shutdown_controller` | SDK |
+| `MavlinkHubSignalHandler` | `pendarlab-mavlink_hub_signal_handler` | ShutdownController, Threads |
 | `MavlinkHubStartupArgsParser` | `pendarlab-mavlink_hub_startup_args_parser` | SDK, JsonUtils, cli11 |
 | `MavlinkHubStartupAppConfigurator` | `pendarlab-mavlink_hub_startup_app_configurator` | SDK, JsonUtils |
 | `MavlinkHubCliUiController` | `pendarlab-mavlink_hub_cli_ui_controller` | SDK, Threads |
@@ -406,7 +461,7 @@ per-target include dirs.
 | `MavlinkHubLibLoader` | `pendarlab-mavlink_hub_lib_loader` | SDK |
 | `MavlinkHubJsonUtils` | `pendarlab-mavlink_hub_json_utils` | SDK, MavlinkEndpoint, jsoncons |
 | `MavlinkHubAppService` | `pendarlab-mavlink_hub_app_service` | ShutdownController, ArgsParser, CliUiHandler, LibLoader, JsonUtils, SDK |
-| `MavlinkHubApp` | `pendarlab-mavlink_hub_app` | Manager, ShutdownController, ArgsParser, AppConfigurator, CliUiHandler, AppService, SDK |
+| `MavlinkHubApp` | `pendarlab-mavlink_hub_app` | Manager, ShutdownController, SignalHandler, ArgsParser, AppConfigurator, CliUiHandler, AppService, SDK |
 
 The `mavlink_hub` main executable target is **commented out** in `CMakeLists.txt`; only
 libraries + tests build.
@@ -436,6 +491,7 @@ GTest executables are run directly from the build dir (no ctest). Two kinds of m
 | `MavlinkHubStartupArgsParserTest` | CLI11 arg parsing |
 | `MavlinkHubCliUiControllerTest` | Controller model (dispatch, async, callbacks) |
 | `MavlinkHubCommandDescriptorTest` | Command descriptor table integrity |
+| `MavlinkHubSignalHandlerTest` | SIGINT/SIGTERM trigger cooperative shutdown; off unless explicitly started |
 | `MavlinkHubAppServiceTest` / `MavlinkHubAppTest` | Declared but **incomplete** (no `target_link_libraries`) |
 | `MavlinkHubCliUiPreview` | Manual TUI preview (not a test) |
 

@@ -80,6 +80,38 @@ target_link_libraries(MavlinkHubShutdownController
 set_target_properties(MavlinkHubShutdownController PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_shutdown_controller)
 
 ##############################################################################
+########################     SignalHandler     ###############################
+##############################################################################
+add_library(MavlinkHubSignalHandler SHARED
+  src/app/signal_handler/SignalHandler.cpp
+)
+target_include_directories(MavlinkHubSignalHandler PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include> 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubSignalHandler
+    PUBLIC MavlinkHubShutdownController
+    PUBLIC Threads::Threads
+)
+set_target_properties(MavlinkHubSignalHandler PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_signal_handler)
+
+##############################################################################
+########################     SignalHandler Test     ##########################
+##############################################################################
+add_executable(MavlinkHubSignalHandlerTest
+  test/app/signal_handler/signal_handler_test.cpp
+)
+target_include_directories(MavlinkHubSignalHandlerTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubSignalHandlerTest
+  PRIVATE gtest
+  PRIVATE MavlinkHubSignalHandler
+  PRIVATE MavlinkHubShutdownController
+  PRIVATE Threads::Threads
+)
+
+##############################################################################
 ########################     ShutdownController Test    #####################
 ##############################################################################
 add_executable(MavlinkHubShutdownControllerTest
@@ -293,6 +325,7 @@ target_include_directories(MavlinkHubApp PUBLIC
 target_link_libraries(MavlinkHubApp
   PUBLIC MavlinkHubManager
   PUBLIC MavlinkHubShutdownController
+  PUBLIC MavlinkHubSignalHandler
   PUBLIC MavlinkHubStartupArgsParser
   PUBLIC MavlinkHubStartupAppConfigurator
   PUBLIC MavlinkHubCliUiHandler
