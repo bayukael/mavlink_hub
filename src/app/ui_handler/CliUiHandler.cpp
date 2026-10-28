@@ -1,5 +1,7 @@
 #include "app/ui_handler/CliUiHandler.h"
 
+#include "app/shutdown_controller/ShutdownController.h"
+#include "app/ui_handler/CliRoutine.h"
 #include "app/ui_handler/CliUiController.h"
 #include "common/types/OperationResult.h"
 
@@ -13,8 +15,9 @@
 namespace pendarlab::app::mavlink_hub
 {
   struct CliUiHandler::CliUiHandlerImpl {
-    CliUiHandlerImpl(IAppService& appsrv);
+    CliUiHandlerImpl(IAppService& appsrv, ShutdownController& shutdown_controller);
 
+    ShutdownController& shutdown_controller;
     CliUiController controller;
 
     std::string app_status = "Running";
@@ -48,7 +51,8 @@ namespace pendarlab::app::mavlink_hub
     void generateUserInterface();
   };
 
-  CliUiHandler::CliUiHandlerImpl::CliUiHandlerImpl(IAppService& appsrv) : controller(appsrv)
+  CliUiHandler::CliUiHandlerImpl::CliUiHandlerImpl(IAppService& appsrv, ShutdownController& shutdown_controller)
+      : shutdown_controller(shutdown_controller), controller(appsrv)
   {
     const std::vector<CommandDescriptor>& descriptors = controller.commandDescriptors();
     for (const CommandDescriptor& descriptor : descriptors) {
@@ -320,7 +324,8 @@ namespace pendarlab::app::mavlink_hub
     app.Loop(layout_with_nav);
   }
 
-  CliUiHandler::CliUiHandler(IAppService& appsrv) : d(std::make_unique<CliUiHandlerImpl>(appsrv))
+  CliUiHandler::CliUiHandler(IAppService& appsrv, ShutdownController& shutdown_controller)
+      : d(std::make_unique<CliUiHandlerImpl>(appsrv, shutdown_controller))
   {
   }
   CliUiHandler::~CliUiHandler()
@@ -350,7 +355,14 @@ namespace pendarlab::app::mavlink_hub
       }
     });
 
-    d->ui_thread = std::thread(&CliUiHandler::CliUiHandlerImpl::generateUserInterface, d.get());
+    // Wrap the UI-generating function in a CliRoutine so that, when the UI
+    // thread exits (user quits) or ends abnormally (exception), shutdown is
+    // requested and App::run()'s waitForShutdownSignal() returns instead of
+    // hanging.
+    d->ui_thread = std::thread([this] {
+      CliRoutine routine(d->shutdown_controller, [this] { d->generateUserInterface(); });
+      routine.run();
+    });
   }
 
   void CliUiHandler::stop()
