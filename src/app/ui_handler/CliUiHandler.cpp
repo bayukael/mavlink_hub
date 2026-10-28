@@ -36,6 +36,18 @@ namespace pendarlab::app::mavlink_hub
     bool running = false;
     std::thread ui_thread;
 
+    // Resizable overview-table column widths (pixels), adjustable by dragging the
+    // column separators. Persisted across renders for the UI session.
+    int agent_name_w = 12;
+    int agent_name_type_w = 24;
+    int agent_name_type_status_w = 36;
+    int ep_type_status_w = 22;
+    int ep_status_w = 14;
+
+    // Width (pixels) of the Agent List pane in the overview row; the Endpoint
+    // List pane fills the rest. Dragging the boundary between them adjusts it.
+    int overview_agent_width = 70;
+
     void generateUserInterface();
   };
 
@@ -174,11 +186,105 @@ namespace pendarlab::app::mavlink_hub
       // clang-format on
     });
 
-    Component layout = Renderer(command_pane, [&] {
+    // Overview row: Agent List and Endpoint List tables. The renderer consumes the
+    // row data exposed by the controller (agentRows()/endpointRows()) so the view
+    // never needs to change when the data source is wired in. Each table is a chain
+    // of ftxui ResizableSplit components: every column is a vertical stack of its
+    // cells, and the user can drag a column separator to resize that column.
+    // Column widths are kept in the impl members so the user's chosen sizes persist
+    // for the whole UI session.
+    // clang-format off
+
+    // Render one column: a bold, centered header with a horizontal separator under
+    // it, then one body cell per data value. Body cells are left-aligned by default;
+    // pass dim_bodies to render them dimmed (used for the "(empty)" marker row).
+    auto make_col = [](const std::string& header, std::function<std::vector<std::string>()> body,
+                       bool dim_bodies = false) -> Component {
+      return Renderer([header, body = std::move(body), dim_bodies] {
+        Elements el;
+        el.push_back(text(header) | bold | center);
+        el.push_back(separator());
+        for (const std::string& v : body()) {
+          Element t = text(v);
+          if (dim_bodies) {
+            t = std::move(t) | dim;
+          }
+          el.push_back(std::move(t));
+        }
+        return vbox(std::move(el));
+      });
+    };
+
+    // Body cells for one column of a table. When the list is empty the first column
+    // (is_marker_col) yields a single dim "(empty)" row and the others yield a blank,
+    // so the table reads as intentionally empty.
+    auto col_body = [&](const std::vector<OverviewRow>& rows, const std::string OverviewRow::* field,
+                        bool is_marker_col) {
+      std::vector<std::string> body;
+      if (rows.empty()) {
+        body.push_back(is_marker_col ? std::string("(empty)") : std::string());
+      } else {
+        body.reserve(rows.size());
+        for (const auto& row : rows) {
+          body.push_back(row.*field);
+        }
+      }
+      return body;
+    };
+
+    const std::vector<OverviewRow>& agent_rows = controller.agentRows();
+    const bool agent_empty = agent_rows.empty();
+    // Agent List table columns: Name | Type | Status | Report.
+    Component agent_name_col   = make_col("Name",   [&] { return col_body(agent_rows, &OverviewRow::name,   true); }, agent_empty);
+    Component agent_type_col   = make_col("Type",   [&] { return col_body(agent_rows, &OverviewRow::type,   false); }, agent_empty);
+    Component agent_status_col = make_col("Status", [&] { return col_body(agent_rows, &OverviewRow::status, false); }, agent_empty);
+    Component agent_report_col = make_col("Report", [&] { return col_body(agent_rows, &OverviewRow::report, false); }, agent_empty);
+    Component agent_split = ResizableSplitLeft(
+        ResizableSplitLeft(
+            ResizableSplitLeft(
+                agent_name_col,
+                agent_type_col,
+                &agent_name_w),
+            agent_status_col,
+            &agent_name_type_w),
+        agent_report_col,
+        &agent_name_type_status_w);
+
+    const std::vector<OverviewRow>& endpoint_rows = controller.endpointRows();
+    const bool endpoint_empty = endpoint_rows.empty();
+    // Endpoint List table columns: Name | Type | Status (Name fills the rest).
+    Component ep_name_col   = make_col("Name",   [&] { return col_body(endpoint_rows, &OverviewRow::name,   true); }, endpoint_empty);
+    Component ep_type_col   = make_col("Type",   [&] { return col_body(endpoint_rows, &OverviewRow::type,   false); }, endpoint_empty);
+    Component ep_status_col = make_col("Status", [&] { return col_body(endpoint_rows, &OverviewRow::status, false); }, endpoint_empty);
+    Component endpoint_split = ResizableSplitRight(
+        ResizableSplitRight(ep_status_col, ep_type_col, &ep_status_w),
+        ep_name_col,
+        &ep_type_status_w);
+    // clang-format on
+
+    // Build each table pane as a component that routes events to its inner column
+    // splits, wrapped in a titled, bordered panel. No flex here: the outer
+    // overview split sizes the agent pane (fixed) and the endpoint pane (fills).
+    Component agent_pane = Renderer(agent_split, [&] {
+      return vbox(text("Agent List") | bold | center, separator(), agent_split->Render()) | border;
+    });
+    Component endpoint_pane = Renderer(endpoint_split, [&] {
+      return vbox(text("Endpoint List") | bold | center, separator(), endpoint_split->Render()) | border;
+    });
+
+    // Overview split keeps the agent/endpoint boundary draggable; the agent pane
+    // has a fixed width and the endpoint pane fills the rest.
+    Component overview_split = ResizableSplitLeft(agent_pane, endpoint_pane, &overview_agent_width);
+
+    // The overview splits are interactive children of the layout so their
+    // separators receive mouse (drag) events, while rendering stays in the custom
+    // vbox layout below.
+    Component layout = Renderer(Container::Vertical({ command_pane, overview_split }), [&] {
       // clang-format off
       return vbox({
                  text("Mavlink Hub UI") | bold | center | border,
                  hbox({ command_pane->Render() | border, command_result_pane->Render() | flex | border }) | flex,
+                 overview_split->Render(),
                  text("Application Status: " + app_status) | border | notflex,
              }) | border;
       // clang-format on

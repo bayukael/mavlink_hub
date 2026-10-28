@@ -37,7 +37,7 @@ TEST_F(CliUiControllerTest, NoCommandCommittedDispatchesNothing)
   EXPECT_EQ(controller->committedCommand(), -1);
   controller->executeCurrentCommand();
   controller->joinExecution();
-  EXPECT_EQ(true, app_service.commands.empty());
+  EXPECT_EQ(app_service.commands.empty(), true);
 }
 
 TEST_F(CliUiControllerTest, CommittedCommandWithOutOfRangeIndexDispatchesNothing)
@@ -45,7 +45,7 @@ TEST_F(CliUiControllerTest, CommittedCommandWithOutOfRangeIndexDispatchesNothing
   controller->commitCommand(12345);
   controller->executeCurrentCommand();
   controller->joinExecution();
-  EXPECT_EQ(true, app_service.commands.empty());
+  EXPECT_EQ(app_service.commands.empty(), true);
 }
 
 TEST_F(CliUiControllerTest, ExecuteDispatchesCommittedCommandTypeAndPayload)
@@ -68,8 +68,8 @@ TEST_F(CliUiControllerTest, StoresResultAfterExecution)
   controller->joinExecution();
 
   auto result = controller->commandResult();
-  ASSERT_TRUE(result.has_value());
-  EXPECT_EQ(true, result->success);
+  ASSERT_EQ(result.has_value(), true);
+  EXPECT_EQ(result->success, true);
 }
 
 TEST_F(CliUiControllerTest, OnUpdateInvokedWhenCommandCompletes)
@@ -86,7 +86,7 @@ TEST_F(CliUiControllerTest, OnUpdateInvokedWhenCommandCompletes)
   controller->joinExecution();
 
   EXPECT_EQ(update_count.load(), 1);
-  EXPECT_EQ(false, controller->executing());
+  EXPECT_EQ(controller->executing(), false);
 }
 
 TEST_F(CliUiControllerTest, MarksExecutingWhileInFlightAndClearsAfter)
@@ -102,8 +102,8 @@ TEST_F(CliUiControllerTest, MarksExecutingWhileInFlightAndClearsAfter)
   observed_executing = controller->executing();
 
   controller->joinExecution();
-  EXPECT_EQ(true, observed_executing);
-  EXPECT_EQ(false, controller->executing());
+  EXPECT_EQ(observed_executing, true);
+  EXPECT_EQ(controller->executing(), false);
 }
 
 TEST_F(CliUiControllerTest, IgnoresSecondExecuteWhileInFlight)
@@ -135,7 +135,7 @@ TEST_F(CliUiControllerTest, ClearPayloadEmptiesPayload)
 {
   controller->setPayload("some payload");
   controller->clearPayload();
-  EXPECT_EQ(true, controller->payload().empty());
+  EXPECT_EQ(controller->payload().empty(), true);
 }
 
 TEST_F(CliUiControllerTest, ClearResultEmptiesResult)
@@ -143,10 +143,10 @@ TEST_F(CliUiControllerTest, ClearResultEmptiesResult)
   controller->commitCommand(0);
   controller->executeCurrentCommand();
   controller->joinExecution();
-  ASSERT_TRUE(controller->commandResult().has_value());
+  ASSERT_EQ(controller->commandResult().has_value(), true);
 
   controller->clearResult();
-  EXPECT_EQ(false, controller->commandResult().has_value());
+  EXPECT_EQ(controller->commandResult().has_value(), false);
 }
 
 TEST_F(CliUiControllerTest, SelectionAndCommitAreStored)
@@ -156,6 +156,14 @@ TEST_F(CliUiControllerTest, SelectionAndCommitAreStored)
 
   controller->commitCommand(5);
   EXPECT_EQ(controller->committedCommand(), 5);
+}
+
+TEST_F(CliUiControllerTest, OverviewRowsDefaultToEmpty)
+{
+  // The view reads agent/endpoint rows from the controller; until the
+  // data/discovery wiring populates them they are empty.
+  EXPECT_EQ(controller->agentRows().empty(), true);
+  EXPECT_EQ(controller->endpointRows().empty(), true);
 }
 
 int main(int argc, char** argv)

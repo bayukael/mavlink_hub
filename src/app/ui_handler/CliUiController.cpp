@@ -24,6 +24,9 @@ namespace pendarlab::app::mavlink_hub
     std::thread execute_thread;
     std::function<void()> on_update;
 
+    std::vector<OverviewRow> agent_rows;
+    std::vector<OverviewRow> endpoint_rows;
+
     bool validCommittedCommand() const;
     void executeCommandAsync(const UserCommand& cmd);
   };
@@ -140,6 +143,16 @@ namespace pendarlab::app::mavlink_hub
   {
     std::lock_guard<std::mutex> lock(d->result_mutex);
     d->command_result.reset();
+  }
+
+  const std::vector<OverviewRow>& CliUiController::agentRows() const
+  {
+    return d->agent_rows;
+  }
+
+  const std::vector<OverviewRow>& CliUiController::endpointRows() const
+  {
+    return d->endpoint_rows;
   }
 
   void CliUiController::setOnUpdate(std::function<void()> callback)
