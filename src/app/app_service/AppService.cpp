@@ -127,17 +127,37 @@ namespace pendarlab::app::mavlink_hub
         /* code */
         break;
 
-      case UserCommandType::GET_ENDPOINT_LIST:
-        /* code */
+      case UserCommandType::GET_ENDPOINT_LIST: {
+        result.success = true;
+        result.message.push_back("[AppService]: Endpoint list has been retrieved.");
+        result.data = json_utils::endpointListToJsonString(d->manager.getMavlinkEndpointList());
         break;
+      }
 
-      case UserCommandType::GET_ENDPOINT_STATUS:
-        /* code */
+      case UserCommandType::GET_ENDPOINT_STATUS: {
+        if (cmd.payload.empty()) {
+          result.success = false;
+          result.message.push_back("[AppService]: Endpoint status is not retrieved because the endpoint name is missing");
+          break;
+        }
+        auto endpoint_state = d->manager.getMavlinkEndpointState(cmd.payload);
+        if (!endpoint_state.has_value()) {
+          result.success = false;
+          result.message.push_back("[AppService]: Endpoint status is not retrieved because the endpoint name [" + cmd.payload + "] is not registered");
+          break;
+        }
+        result.success = true;
+        result.message.push_back("[AppService]: Endpoint status has been retrieved.");
+        result.data = json_utils::endpointStatusToJsonString(endpoint_state.value());
         break;
+      }
 
-      case UserCommandType::GET_ENDPOINT_STATUS_ALL:
-        /* code */
+      case UserCommandType::GET_ENDPOINT_STATUS_ALL: {
+        result.success = true;
+        result.message.push_back("[AppService]: Endpoint statuses have been retrieved.");
+        result.data = json_utils::endpointStatusListToJsonString(d->manager.getMavlinkEndpointStateAll());
         break;
+      }
 
       case UserCommandType::ADD_AGENT:
         /* code */
@@ -159,17 +179,37 @@ namespace pendarlab::app::mavlink_hub
         /* code */
         break;
 
-      case UserCommandType::GET_AGENT_LIST:
-        /* code */
+      case UserCommandType::GET_AGENT_LIST: {
+        result.success = true;
+        result.message.push_back("[AppService]: Agent list has been retrieved.");
+        result.data = json_utils::agentListToJsonString(d->manager.getAgentList());
         break;
+      }
 
-      case UserCommandType::GET_AGENT_STATUS:
-        /* code */
+      case UserCommandType::GET_AGENT_STATUS: {
+        if (cmd.payload.empty()) {
+          result.success = false;
+          result.message.push_back("[AppService]: Agent status is not retrieved because the agent name is missing");
+          break;
+        }
+        auto agent_state = d->manager.getAgentState(cmd.payload);
+        if (!agent_state.has_value()) {
+          result.success = false;
+          result.message.push_back("[AppService]: Agent status is not retrieved because the agent name [" + cmd.payload + "] is not registered");
+          break;
+        }
+        result.success = true;
+        result.message.push_back("[AppService]: Agent status has been retrieved.");
+        result.data = json_utils::agentStatusToJsonString(agent_state.value());
         break;
+      }
 
-      case UserCommandType::GET_AGENT_STATUS_ALL:
-        /* code */
+      case UserCommandType::GET_AGENT_STATUS_ALL: {
+        result.success = true;
+        result.message.push_back("[AppService]: Agent statuses have been retrieved.");
+        result.data = json_utils::agentStatusListToJsonString(d->manager.getAgentStateAll());
         break;
+      }
 
       default: break;
     }
