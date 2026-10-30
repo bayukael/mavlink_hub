@@ -13,6 +13,11 @@ namespace pendarlab::app::mavlink_hub::test
     MockAgent();
     virtual ~MockAgent();
 
+    /// Simple, easily-checkable report payload returned verbatim by report().
+    static const std::string kReportPayload;
+
+    virtual std::string report() const override;
+
   protected:
     virtual bool doStart() override;
     virtual bool doStop() override;

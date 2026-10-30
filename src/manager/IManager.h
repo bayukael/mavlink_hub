@@ -77,6 +77,17 @@ namespace pendarlab::app::mavlink_hub
     /// @return the current state of every registered agent, keyed by agent name.
     virtual std::unordered_map<std::string, AgentState> getAgentStateAll() = 0;
 
+    /// @return the report of the named agent, or std::nullopt if it is not registered.
+    ///
+    /// The report is an opaque string chosen by the agent; it is returned as-is and
+    /// its format is not interpreted by the manager.
+    virtual std::optional<std::string> getAgentReport(const std::string& name) = 0;
+
+    /// @return the report of every registered agent, keyed by agent name.
+    ///
+    /// Each report is an opaque string chosen by its agent and is returned as-is.
+    virtual std::unordered_map<std::string, std::string> getAgentReportAll() = 0;
+
     /// Validate an endpoint \c type against \p config without registering anything.
     ///
     /// @return success only if \p type is a registered transport and \p config parses

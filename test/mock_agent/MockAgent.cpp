@@ -2,11 +2,18 @@
 
 namespace pendarlab::app::mavlink_hub::test
 {
+  const std::string MockAgent::kReportPayload = "MockAgent Report";
+
   MockAgent::MockAgent()
   {
   }
   MockAgent::~MockAgent()
   {
+  }
+
+  std::string MockAgent::report() const
+  {
+    return kReportPayload;
   }
 
   bool MockAgent::doStart()

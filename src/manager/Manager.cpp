@@ -263,6 +263,24 @@ namespace pendarlab::app::mavlink_hub
     return states;
   }
 
+  std::optional<std::string> Manager::getAgentReport(const std::string& name)
+  {
+    auto it = d->agents.find(name);
+    if (it == d->agents.end()) {
+      return std::nullopt;
+    }
+    return it->second->report();
+  }
+
+  std::unordered_map<std::string, std::string> Manager::getAgentReportAll()
+  {
+    std::unordered_map<std::string, std::string> reports;
+    for (auto& [name, agent] : d->agents) {
+      reports[name] = agent->report();
+    }
+    return reports;
+  }
+
   OperationResult Manager::validateMavlinkEndpointConfig(const std::string& type,
                                                          const std::unordered_map<std::string, std::string>& config)
   {
