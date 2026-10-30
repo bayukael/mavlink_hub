@@ -11,6 +11,7 @@
 #include <manager/types/UserPlan.h>
 #include <manager/types/UserPlanPolicy.h>
 #include <memory>
+#include <mock_agent/MockAgent.h>
 #include <mock_agent/MockAgentDefinition.h>
 #include <mock_byte_transport/MockByteTransportDefinition.h>
 #include <string>
@@ -406,6 +407,36 @@ TEST_F(AgentManagementTest, GettingAllAgentStateShouldReturnAllAddedAgentsState)
     }
     EXPECT_EQ(found, true);
   }
+}
+
+TEST_F(AgentManagementTest, GettingExistingAgentReportShouldReturnMockAgentPayload)
+{
+  using MockAgent = pendarlab::app::mavlink_hub::test::MockAgent;
+  for (auto& ag_name : agents_name) {
+    std::optional<std::string> report = manager.getAgentReport(ag_name);
+    EXPECT_NE(report, std::nullopt);
+    EXPECT_EQ(report.has_value(), true);
+    EXPECT_EQ(report.value(), MockAgent::kReportPayload);
+  }
+}
+
+TEST_F(AgentManagementTest, GettingANonExistingAgentReportShouldReturnNullopt)
+{
+  std::optional<std::string> report = manager.getAgentReport("non_existing_agent");
+  EXPECT_EQ(report, std::nullopt);
+  EXPECT_EQ(report.has_value(), false);
+}
+
+TEST_F(AgentManagementTest, GettingAllAgentReportsShouldReturnAllAddedAgentsReports)
+{
+  using MockAgent = pendarlab::app::mavlink_hub::test::MockAgent;
+  auto agents_report = manager.getAgentReportAll();
+  for (auto& added_agent_name : agents_name) {
+    auto it = agents_report.find(added_agent_name);
+    ASSERT_NE(it, agents_report.end());
+    EXPECT_EQ(it->second, MockAgent::kReportPayload);
+  }
+  EXPECT_EQ(agents_report.size(), agents_name.size());
 }
 
 TEST_F(AgentManagementTest, StopExistingAgentsShouldWork)

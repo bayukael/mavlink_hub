@@ -51,6 +51,8 @@ namespace pendarlab::app::mavlink_hub
     virtual std::vector<std::string> getAgentList() override;
     virtual std::optional<AgentState> getAgentState(const std::string& name) override;
     virtual std::unordered_map<std::string, AgentState> getAgentStateAll() override;
+    virtual std::optional<std::string> getAgentReport(const std::string& name) override;
+    virtual std::unordered_map<std::string, std::string> getAgentReportAll() override;
 
     virtual OperationResult validateMavlinkEndpointConfig(const std::string& type,
                                                           const std::unordered_map<std::string, std::string>& config) override;
