@@ -443,4 +443,55 @@ namespace pendarlab::app::mavlink_hub::json_utils
     }
     return j_res.as_string();
   }
+
+  std::optional<std::vector<std::pair<std::string, std::string>>> agentStatusListFromJsonString(const std::string& json_str)
+  {
+    json j;
+    try {
+      j = json::parse(json_str);
+    } catch (...) {
+      return std::nullopt;
+    }
+    if (!j.is_object() || !j.contains("agent_status_list") || !j["agent_status_list"].is_array()) {
+      return std::nullopt;
+    }
+
+    std::vector<std::pair<std::string, std::string>> result;
+    for (const auto& entry : j["agent_status_list"].array_range()) {
+      // The list encoder serializes the raw AgentState enum value as an integer,
+      // so decode it into the enum and reuse the single-status string mapping.
+      if (!entry.is_object() || !entry.contains("name") || !entry["name"].is_string() ||
+          !entry.contains("status") || !entry["status"].is_number()) {
+        return std::nullopt;
+      }
+      auto state = static_cast<AgentState>(entry["status"].as<int>());
+      result.emplace_back(entry["name"].as_string(), agentStateToString(state));
+    }
+    return result;
+  }
+
+  std::optional<std::vector<std::pair<std::string, std::string>>> endpointStatusListFromJsonString(const std::string& json_str)
+  {
+    json j;
+    try {
+      j = json::parse(json_str);
+    } catch (...) {
+      return std::nullopt;
+    }
+    if (!j.is_object() || !j.contains("endpoint_status_list") || !j["endpoint_status_list"].is_array()) {
+      return std::nullopt;
+    }
+
+    std::vector<std::pair<std::string, std::string>> result;
+    for (const auto& entry : j["endpoint_status_list"].array_range()) {
+      if (!entry.is_object() || !entry.contains("name") || !entry["name"].is_string() ||
+          !entry.contains("status") || !entry["status"].is_number()) {
+        return std::nullopt;
+      }
+      auto state = static_cast<MavlinkEndpointState>(entry["status"].as<int>());
+      result.emplace_back(entry["name"].as_string(), endpointStateToString(state));
+    }
+    return result;
+  }
+
 } // namespace pendarlab::app::mavlink_hub::json_utils

@@ -11,6 +11,8 @@
 #include <optional>
 #include <string>
 #include <unordered_map>
+#include <utility>
+#include <vector>
 
 namespace pendarlab::app::mavlink_hub::json_utils
 {
@@ -61,5 +63,22 @@ namespace pendarlab::app::mavlink_hub::json_utils
 
   /// Serialize a name->endpoint-state map to a JSON string under the "endpoint_status_list" key.
   std::string endpointStatusListToJsonString(const std::unordered_map<std::string, pendarlab::lib::comm::MavlinkEndpointState>& list);
+
+  /// Decode an "agent_status_list" payload (the shape produced by
+  /// agentStatusListToJsonString) into one {name, status} pair per entry, where
+  /// \c status is the lowercase string form (\c agentStateToString), matching the
+  /// representation the single-status encoder produces.
+  ///
+  /// @return std::nullopt if the payload is not valid JSON or does not match the
+  ///         encoder's list-of-{name, status} shape.
+  std::optional<std::vector<std::pair<std::string, std::string>>> agentStatusListFromJsonString(const std::string& json_str);
+
+  /// Decode an "endpoint_status_list" payload (the shape produced by
+  /// endpointStatusListToJsonString) into one {name, status} pair per entry,
+  /// where \c status is the lowercase string form (\c endpointStateToString).
+  ///
+  /// @return std::nullopt if the payload is not valid JSON or does not match the
+  ///         encoder's list-of-{name, status} shape.
+  std::optional<std::vector<std::pair<std::string, std::string>>> endpointStatusListFromJsonString(const std::string& json_str);
 
 } // namespace pendarlab::app::mavlink_hub::json_utils

@@ -607,6 +607,101 @@ TEST_F(StatusToJsonStringTest, EndpointConnectingStateShouldReturnProperJsonStri
   EXPECT_EQ(j_actual, j_expected);
 }
 
+class StatusListFromJsonStringTest : public testing::Test
+{
+protected:
+  void SetUp() override {}
+  void TearDown() override {}
+};
+
+TEST_F(StatusListFromJsonStringTest, AgentStatusListShouldDecodeToLowercaseStatuses)
+{
+  using namespace pendarlab::app::mavlink_hub;
+
+  // The list encoder emits the raw AgentState enum integer; the decoder must map
+  // it back to the lowercase string form used by the single-status encoder.
+  std::unordered_map<std::string, AgentState> states{
+    { "agent-1", AgentState::ACTIVE },
+    { "agent-2", AgentState::IDLE },
+    { "agent-3", AgentState::STARTING },
+    { "agent-4", AgentState::STOPPING },
+  };
+  const std::string payload = json_utils::agentStatusListToJsonString(states);
+
+  auto decoded = json_utils::agentStatusListFromJsonString(payload);
+  ASSERT_NE(decoded, std::nullopt);
+  ASSERT_EQ(decoded->size(), states.size());
+
+  std::unordered_map<std::string, std::string> name_to_status;
+  for (const auto& [name, status] : *decoded) {
+    name_to_status[name] = status;
+  }
+  EXPECT_EQ(name_to_status["agent-1"], "active");
+  EXPECT_EQ(name_to_status["agent-2"], "idle");
+  EXPECT_EQ(name_to_status["agent-3"], "starting");
+  EXPECT_EQ(name_to_status["agent-4"], "stopping");
+}
+
+TEST_F(StatusListFromJsonStringTest, EndpointStatusListShouldDecodeToLowercaseStatuses)
+{
+  using namespace pendarlab::app::mavlink_hub;
+
+  std::unordered_map<std::string, MavlinkEndpointState> states{
+    { "endpoint-1", MavlinkEndpointState::CONNECTED },
+    { "endpoint-2", MavlinkEndpointState::DISCONNECTED },
+    { "endpoint-3", MavlinkEndpointState::CONNECTING },
+    { "endpoint-4", MavlinkEndpointState::DISCONNECTING },
+  };
+  const std::string payload = json_utils::endpointStatusListToJsonString(states);
+
+  auto decoded = json_utils::endpointStatusListFromJsonString(payload);
+  ASSERT_NE(decoded, std::nullopt);
+  ASSERT_EQ(decoded->size(), states.size());
+
+  std::unordered_map<std::string, std::string> name_to_status;
+  for (const auto& [name, status] : *decoded) {
+    name_to_status[name] = status;
+  }
+  EXPECT_EQ(name_to_status["endpoint-1"], "connected");
+  EXPECT_EQ(name_to_status["endpoint-2"], "disconnected");
+  EXPECT_EQ(name_to_status["endpoint-3"], "connecting");
+  EXPECT_EQ(name_to_status["endpoint-4"], "disconnecting");
+}
+
+TEST_F(StatusListFromJsonStringTest, EmptyStatusListShouldDecodeToEmptyVector)
+{
+  using namespace pendarlab::app::mavlink_hub;
+
+  auto agents = json_utils::agentStatusListFromJsonString("{ \"agent_status_list\": [] }");
+  ASSERT_NE(agents, std::nullopt);
+  EXPECT_EQ(agents->empty(), true);
+
+  auto endpoints = json_utils::endpointStatusListFromJsonString("{ \"endpoint_status_list\": [] }");
+  ASSERT_NE(endpoints, std::nullopt);
+  EXPECT_EQ(endpoints->empty(), true);
+}
+
+TEST_F(StatusListFromJsonStringTest, MalformedOrMismatchedStatusListShouldReturnNullopt)
+{
+  using namespace pendarlab::app::mavlink_hub;
+
+  // Not valid JSON.
+  EXPECT_EQ(json_utils::agentStatusListFromJsonString("not json"), std::nullopt);
+  EXPECT_EQ(json_utils::endpointStatusListFromJsonString("not json"), std::nullopt);
+
+  // Missing the expected container key.
+  EXPECT_EQ(json_utils::agentStatusListFromJsonString("{ \"other\": [] }"), std::nullopt);
+  EXPECT_EQ(json_utils::endpointStatusListFromJsonString("{ \"other\": [] }"), std::nullopt);
+
+  // The value under the key is not an array.
+  EXPECT_EQ(json_utils::agentStatusListFromJsonString("{ \"agent_status_list\": 42 }"), std::nullopt);
+  EXPECT_EQ(json_utils::endpointStatusListFromJsonString("{ \"endpoint_status_list\": {} }"), std::nullopt);
+
+  // An entry missing its status field.
+  EXPECT_EQ(json_utils::agentStatusListFromJsonString("{ \"agent_status_list\": [ { \"name\": \"a\" } ] }"), std::nullopt);
+  EXPECT_EQ(json_utils::endpointStatusListFromJsonString("{ \"endpoint_status_list\": [ { \"name\": \"a\" } ] }"), std::nullopt);
+}
+
 int main(int argc, char* argv[])
 {
   testing::InitGoogleTest(&argc, argv);

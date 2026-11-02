@@ -171,6 +171,7 @@ target_include_directories(MavlinkHubCliUiController PUBLIC
 )
 target_link_libraries(MavlinkHubCliUiController
     PUBLIC pendarlab::MavlinkHubSdk
+    PUBLIC MavlinkHubJsonUtils
     PUBLIC Threads::Threads
 )
 set_target_properties(MavlinkHubCliUiController PROPERTIES OUTPUT_NAME pendarlab-mavlink_hub_cli_ui_controller)
@@ -241,6 +242,36 @@ target_link_libraries(MavlinkHubCliUiControllerTest
   PRIVATE gtest
   PRIVATE MavlinkHubCliUiController
   PRIVATE MavlinkHubMockAppService
+)
+
+##############################################################################
+################   CliUiController Startup-Plan Test   #######################
+##############################################################################
+add_executable(MavlinkHubCliUiControllerPlanTest
+  test/app/ui_handler/cli_ui_controller_plan_test.cpp
+)
+target_include_directories(MavlinkHubCliUiControllerPlanTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/external/jsoncons-1.9.0/include>
+)
+target_compile_options(MavlinkHubCliUiControllerPlanTest
+  PRIVATE -Wno-address-of-packed-member
+)
+target_link_libraries(MavlinkHubCliUiControllerPlanTest
+  PRIVATE gtest
+  PRIVATE pendarlab::ByteTransport
+  PRIVATE pendarlab::MavlinkHubSdk
+  PRIVATE MavlinkHubManager
+  PRIVATE MavlinkHubAppService
+  PRIVATE MavlinkHubCliUiController
+  PRIVATE MavlinkHubStartupAppConfigurator
+  PRIVATE MavlinkHubMockAgent
+  PRIVATE MavlinkHubMockByteTransport
+  PRIVATE MavlinkHubMockLibLoader
+)
+target_compile_definitions(MavlinkHubCliUiControllerPlanTest
+  PRIVATE TEST_PLAN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/app/ui_handler/"
 )
 
 ##############################################################################

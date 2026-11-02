@@ -166,6 +166,133 @@ TEST_F(CliUiControllerTest, OverviewRowsDefaultToEmpty)
   EXPECT_EQ(controller->endpointRows().empty(), true);
 }
 
+TEST_F(CliUiControllerTest, PopulateOverviewOnStartFetchesBothStatusAllProgrammatically)
+{
+  using pendarlab::app::mavlink_hub::OverviewRow;
+
+  // A hub already holding registered agents and endpoints (e.g. from a plan
+  // applied on startup). The mock surfaces them through the status-list payloads.
+  app_service.agent_status_all["agent-1"] = 2;      // AgentState::ACTIVE
+  app_service.agent_status_all["agent-2"] = 0;      // AgentState::IDLE
+  app_service.endpoint_status_all["endpoint-1"] = 2; // MavlinkEndpointState::CONNECTED
+  app_service.endpoint_status_all["endpoint-2"] = 0; // MavlinkEndpointState::DISCONNECTED
+
+  controller->updateOverviewData();
+
+  // Both commands were issued programmatically through the service.
+  ASSERT_EQ(app_service.commands.size(), 2u);
+  EXPECT_EQ(app_service.commands[0].cmd_type, UserCommandType::GET_AGENT_STATUS_ALL);
+  EXPECT_EQ(app_service.commands[1].cmd_type, UserCommandType::GET_ENDPOINT_STATUS_ALL);
+  // No user interaction is involved: the committed command is untouched.
+  EXPECT_EQ(controller->committedCommand(), -1);
+
+  // Row order is not guaranteed (the mock returns an unordered map), so find by
+  // name. Each row carries name + lowercase status; type/report are left blank.
+  const auto& agent_rows = controller->agentRows();
+  ASSERT_EQ(agent_rows.size(), 2u);
+  bool saw_agent_1 = false;
+  bool saw_agent_2 = false;
+  for (const auto& row : agent_rows) {
+    EXPECT_EQ(row.type, "");
+    EXPECT_EQ(row.report, "");
+    if (row.name == "agent-1") {
+      saw_agent_1 = true;
+      EXPECT_EQ(row.status, "active");
+    } else if (row.name == "agent-2") {
+      saw_agent_2 = true;
+      EXPECT_EQ(row.status, "idle");
+    }
+  }
+  EXPECT_EQ(saw_agent_1, true);
+  EXPECT_EQ(saw_agent_2, true);
+
+  const auto& endpoint_rows = controller->endpointRows();
+  ASSERT_EQ(endpoint_rows.size(), 2u);
+  bool saw_endpoint_1 = false;
+  bool saw_endpoint_2 = false;
+  for (const auto& row : endpoint_rows) {
+    EXPECT_EQ(row.type, "");
+    EXPECT_EQ(row.report, "");
+    if (row.name == "endpoint-1") {
+      saw_endpoint_1 = true;
+      EXPECT_EQ(row.status, "connected");
+    } else if (row.name == "endpoint-2") {
+      saw_endpoint_2 = true;
+      EXPECT_EQ(row.status, "disconnected");
+    }
+  }
+  EXPECT_EQ(saw_endpoint_1, true);
+  EXPECT_EQ(saw_endpoint_2, true);
+}
+
+TEST_F(CliUiControllerTest, PopulateOverviewOnStartParsesReportedStatuses)
+{
+  // Order is not guaranteed for an unordered map, so find by name.
+  app_service.agent_status_all["a"] = 3; // AgentState::STOPPING
+  app_service.agent_status_all["b"] = 1; // AgentState::STARTING
+  app_service.endpoint_status_all["e1"] = 3; // MavlinkEndpointState::DISCONNECTING
+  app_service.endpoint_status_all["e2"] = 1; // MavlinkEndpointState::CONNECTING
+
+  controller->updateOverviewData();
+
+  auto find_status = [](const std::vector<pendarlab::app::mavlink_hub::OverviewRow>& rows,
+                        const std::string& name) -> std::string {
+    for (const auto& row : rows) {
+      if (row.name == name) {
+        return row.status;
+      }
+    }
+    return "<missing>";
+  };
+
+  EXPECT_EQ(controller->agentRows().size(), 2u);
+  EXPECT_EQ(find_status(controller->agentRows(), "a"), "stopping");
+  EXPECT_EQ(find_status(controller->agentRows(), "b"), "starting");
+
+  EXPECT_EQ(controller->endpointRows().size(), 2u);
+  EXPECT_EQ(find_status(controller->endpointRows(), "e1"), "disconnecting");
+  EXPECT_EQ(find_status(controller->endpointRows(), "e2"), "connecting");
+}
+
+TEST_F(CliUiControllerTest, PopulateOverviewOnStartLeavesRowsEmptyWhenNoData)
+{
+  controller->updateOverviewData();
+  EXPECT_EQ(controller->agentRows().empty(), true);
+  EXPECT_EQ(controller->endpointRows().empty(), true);
+}
+
+TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterUserCommandPath)
+{
+  // The startup fetch must not touch the user-command execution path: the
+  // committed command, executing flag, and result stay as the user left them,
+  // and a later user execution still behaves normally.
+  controller->commitCommand(0); // LOAD_PLAN_FROM_PATH
+  controller->setPayload("{\"path\": \"/tmp/plan.json\"}");
+
+  // Simulate the user-command path being used before/independently of the
+  // startup fetch (e.g. an async command already completed).
+  controller->executeCurrentCommand();
+  controller->joinExecution();
+  ASSERT_EQ(app_service.commands.size(), 1u);
+
+  // Now run the startup fetch; it must add its two status commands without
+  // disturbing the user's committed command, executing flag, or result.
+  controller->updateOverviewData();
+  ASSERT_EQ(app_service.commands.size(), 3u);
+
+  EXPECT_EQ(controller->committedCommand(), 0);
+  EXPECT_EQ(controller->executing(), false);
+  ASSERT_EQ(controller->commandResult().has_value(), true);
+  EXPECT_EQ(controller->commandResult()->success, true);
+
+  // The user-command path still executes exactly as before after the fetch.
+  controller->executeCurrentCommand();
+  controller->joinExecution();
+  ASSERT_EQ(app_service.commands.size(), 4u);
+  EXPECT_EQ(app_service.commands[3].cmd_type, UserCommandType::LOAD_PLAN_FROM_PATH);
+  EXPECT_EQ(app_service.commands[3].payload, "{\"path\": \"/tmp/plan.json\"}");
+}
+
 int main(int argc, char** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);

@@ -342,6 +342,12 @@ namespace pendarlab::app::mavlink_hub
     }
     d->running = true;
 
+    // Populate the overview once at startup so the Agent/Endpoint tables reflect
+    // hub state that already exists (e.g. a plan applied on startup) before the
+    // UI first renders. This is a programmatic fetch that does not touch the
+    // user-command execution path.
+    d->controller.updateOverviewData();
+
     // When a command finishes on the worker thread, ask the UI loop to
     // redraw so the result/status pane reflects the new state without
     // requiring any user input.
