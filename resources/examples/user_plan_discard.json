@@ -21,7 +21,8 @@
         "mavlink_endpoint_name": "pixhawk_serial",
         "use_topic_generator": "true",
         "send_freq": "250"
-      }
+      },
+      "start_on_create": true
     }
   ]
 }
