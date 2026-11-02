@@ -61,8 +61,8 @@ TEST_F(AppServiceGetCommandTest, GetEndpointListSucceedsAndEncodesManagerList)
   ASSERT_EQ(result.success, true);
 
   json j = json::parse(result.data);
-  ASSERT_TRUE(j.contains("endpoint_list"));
-  ASSERT_TRUE(j["endpoint_list"].is_array());
+  ASSERT_EQ(j.contains("endpoint_list"), true);
+  ASSERT_EQ(j["endpoint_list"].is_array(), true);
   ASSERT_EQ(j["endpoint_list"].size(), 2);
   EXPECT_EQ(j["endpoint_list"][0].as_string(), "endpoint-1");
   EXPECT_EQ(j["endpoint_list"][1].as_string(), "endpoint-2");
@@ -79,7 +79,7 @@ TEST_F(AppServiceGetCommandTest, GetEndpointStatusSucceedsForRegisteredEndpoint)
   ASSERT_EQ(result.success, true);
 
   json j = json::parse(result.data);
-  ASSERT_TRUE(j.contains("endpoint_status"));
+  ASSERT_EQ(j.contains("endpoint_status"), true);
   EXPECT_EQ(j["endpoint_status"].as_string(), "connected");
 }
 
@@ -88,7 +88,7 @@ TEST_F(AppServiceGetCommandTest, GetEndpointStatusFailsWhenPayloadIsMissing)
   auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_ENDPOINT_STATUS, ""));
 
   ASSERT_EQ(result.success, false);
-  ASSERT_FALSE(result.message.empty());
+  ASSERT_EQ(result.message.empty(), false);
   EXPECT_NE(result.message[0].find("endpoint name is missing"), std::string::npos);
 }
 
@@ -98,7 +98,7 @@ TEST_F(AppServiceGetCommandTest, GetEndpointStatusFailsForUnregisteredEndpoint)
       commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_ENDPOINT_STATUS, "unknown-endpoint"));
 
   ASSERT_EQ(result.success, false);
-  ASSERT_FALSE(result.message.empty());
+  ASSERT_EQ(result.message.empty(), false);
   EXPECT_NE(result.message[0].find("is not registered"), std::string::npos);
 }
 
@@ -112,8 +112,8 @@ TEST_F(AppServiceGetCommandTest, GetEndpointStatusAllSucceedsAndEncodesManagerSt
   ASSERT_EQ(result.success, true);
 
   json j = json::parse(result.data);
-  ASSERT_TRUE(j.contains("endpoint_status_list"));
-  ASSERT_TRUE(j["endpoint_status_list"].is_array());
+  ASSERT_EQ(j.contains("endpoint_status_list"), true);
+  ASSERT_EQ(j["endpoint_status_list"].is_array(), true);
   ASSERT_EQ(j["endpoint_status_list"].size(), 2);
 
   // The existing JsonUtils endpointStatusListToJsonString encoder emits the raw
@@ -136,8 +136,8 @@ TEST_F(AppServiceGetCommandTest, GetAgentListSucceedsAndEncodesManagerList)
   ASSERT_EQ(result.success, true);
 
   json j = json::parse(result.data);
-  ASSERT_TRUE(j.contains("agent_list"));
-  ASSERT_TRUE(j["agent_list"].is_array());
+  ASSERT_EQ(j.contains("agent_list"), true);
+  ASSERT_EQ(j["agent_list"].is_array(), true);
   ASSERT_EQ(j["agent_list"].size(), 2);
   EXPECT_EQ(j["agent_list"][0].as_string(), "agent-1");
   EXPECT_EQ(j["agent_list"][1].as_string(), "agent-2");
@@ -154,7 +154,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentStatusSucceedsForRegisteredAgent)
   ASSERT_EQ(result.success, true);
 
   json j = json::parse(result.data);
-  ASSERT_TRUE(j.contains("agent_status"));
+  ASSERT_EQ(j.contains("agent_status"), true);
   EXPECT_EQ(j["agent_status"].as_string(), "active");
 }
 
@@ -163,7 +163,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentStatusFailsWhenPayloadIsMissing)
   auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_STATUS, ""));
 
   ASSERT_EQ(result.success, false);
-  ASSERT_FALSE(result.message.empty());
+  ASSERT_EQ(result.message.empty(), false);
   EXPECT_NE(result.message[0].find("agent name is missing"), std::string::npos);
 }
 
@@ -173,7 +173,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentStatusFailsForUnregisteredAgent)
       commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_STATUS, "unknown-agent"));
 
   ASSERT_EQ(result.success, false);
-  ASSERT_FALSE(result.message.empty());
+  ASSERT_EQ(result.message.empty(), false);
   EXPECT_NE(result.message[0].find("is not registered"), std::string::npos);
 }
 
@@ -187,8 +187,8 @@ TEST_F(AppServiceGetCommandTest, GetAgentStatusAllSucceedsAndEncodesManagerState
   ASSERT_EQ(result.success, true);
 
   json j = json::parse(result.data);
-  ASSERT_TRUE(j.contains("agent_status_list"));
-  ASSERT_TRUE(j["agent_status_list"].is_array());
+  ASSERT_EQ(j.contains("agent_status_list"), true);
+  ASSERT_EQ(j["agent_status_list"].is_array(), true);
   ASSERT_EQ(j["agent_status_list"].size(), 2);
 
   // The existing JsonUtils agentStatusListToJsonString encoder emits the raw
@@ -212,7 +212,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentReportSucceedsForRegisteredAgent)
   ASSERT_EQ(result.success, true);
 
   json j = json::parse(result.data);
-  ASSERT_TRUE(j.contains("agent_report"));
+  ASSERT_EQ(j.contains("agent_report"), true);
   EXPECT_EQ(j["agent_report"]["name"].as_string(), "agent-1");
   EXPECT_EQ(j["agent_report"]["report"].as_string(), "MockAgent Report for agent-1");
 }
@@ -222,7 +222,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentReportFailsWhenPayloadIsMissing)
   auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT, ""));
 
   ASSERT_EQ(result.success, false);
-  ASSERT_FALSE(result.message.empty());
+  ASSERT_EQ(result.message.empty(), false);
   EXPECT_NE(result.message[0].find("agent name is missing"), std::string::npos);
 }
 
@@ -232,7 +232,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentReportFailsForUnregisteredAgent)
       commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT, "unknown-agent"));
 
   ASSERT_EQ(result.success, false);
-  ASSERT_FALSE(result.message.empty());
+  ASSERT_EQ(result.message.empty(), false);
   EXPECT_NE(result.message[0].find("is not registered"), std::string::npos);
 }
 
@@ -246,8 +246,8 @@ TEST_F(AppServiceGetCommandTest, GetAgentReportAllSucceedsAndEncodesManagerRepor
   ASSERT_EQ(result.success, true);
 
   json j = json::parse(result.data);
-  ASSERT_TRUE(j.contains("agent_report_list"));
-  ASSERT_TRUE(j["agent_report_list"].is_array());
+  ASSERT_EQ(j.contains("agent_report_list"), true);
+  ASSERT_EQ(j["agent_report_list"].is_array(), true);
   ASSERT_EQ(j["agent_report_list"].size(), 2);
 
   std::unordered_map<std::string, std::string> name_to_report;
