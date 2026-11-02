@@ -1,8 +1,8 @@
 #include "app/startup/AppConfigurator.h"
 
 #include "app/types/CommandResult.h"
-#include "app/types/UserCommand.h"
-#include "app/types/CommandDescriptor.h"
+#include "app/types/AppServiceCommand.h"
+#include "app/app_service/CommandDescriptor.h"
 #include "common/json_utils/JsonUtils.h"
 
 #include <fstream>
@@ -59,8 +59,8 @@ namespace pendarlab::app::mavlink_hub::startup
     // Process path_to_startup_user_plan
     if (!config.path_to_startup_user_plan.empty()) {
       // We can pass all of these to AppService.
-      UserCommand cmd;
-      cmd.cmd_type = UserCommandType::LOAD_PLAN_FROM_PATH;
+      AppServiceCommand cmd;
+      cmd.cmd_type = AppServiceCommandType::LOAD_PLAN_FROM_PATH;
       cmd.payload = config.path_to_startup_user_plan;
       CommandResult load_plan_cmd_result = app_service.executeCommand(cmd);
       OperationResult load_plan_op_result;
@@ -69,7 +69,7 @@ namespace pendarlab::app::mavlink_hub::startup
       result.merge(load_plan_op_result);
 
       if (config.apply_user_plan_on_startup && load_plan_cmd_result.success) {
-        cmd.cmd_type = UserCommandType::APPLY_CURRENT_PLAN;
+        cmd.cmd_type = AppServiceCommandType::APPLY_CURRENT_PLAN;
         cmd.payload = ""; // The command does not need a payload.
         CommandResult apply_plan_cmd_result = app_service.executeCommand(cmd);
         OperationResult apply_plan_op_result;

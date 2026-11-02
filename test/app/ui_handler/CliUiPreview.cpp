@@ -11,7 +11,7 @@ int main()
   using pendarlab::app::mavlink_hub::test::MockAppService;
 
   MockAppService app_service;
-  app_service.slow_command = pendarlab::app::mavlink_hub::UserCommandType::APPLY_CURRENT_PLAN;
+  app_service.slow_command = pendarlab::app::mavlink_hub::AppServiceCommandType::APPLY_CURRENT_PLAN;
   app_service.slow_delay = std::chrono::seconds(5);
   ShutdownController shutdown_controller;
   CliUiHandler cli_handler(app_service, shutdown_controller);

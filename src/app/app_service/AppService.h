@@ -3,7 +3,7 @@
 #include "app/app_service/IAppService.h"
 #include "app/lib_loader/ILibLoader.h"
 #include "app/types/CommandResult.h"
-#include "app/types/UserCommand.h"
+#include "app/types/AppServiceCommand.h"
 #include "manager/IManager.h"
 
 #include <memory>
@@ -23,7 +23,7 @@ namespace pendarlab::app::mavlink_hub
     AppService(AppService&&) noexcept;
     AppService& operator=(AppService&&) noexcept;
 
-    CommandResult executeCommand(const UserCommand& cmd) override;
+    CommandResult executeCommand(const AppServiceCommand& cmd) override;
 
   private:
     struct AppServiceImpl;

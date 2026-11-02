@@ -5,7 +5,7 @@
 
 namespace pendarlab::app::mavlink_hub
 {
-  /// Outcome of executing a UserCommand against the app service.
+  /// Outcome of executing an AppServiceCommand against the app service.
   struct CommandResult {
     bool success;                     ///< Whether the command succeeded.
     std::vector<std::string> message; ///< Human-readable messages describing the outcome.

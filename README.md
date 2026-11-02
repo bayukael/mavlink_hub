@@ -53,7 +53,7 @@ The `mavlink_hub` main executable is built from the `mavlink_hub` target in `CMa
 
 - **Config file** (`-c/--config <path>`) — JSON describing the agent and transport libraries to load at startup (keyed by registration name), an optional extra-libraries file, and an optional startup user plan (with a flag to apply it on startup). See `AppConfig` in `src/app/types/AppConfig.h`.
 
-- **Commands** — the UI presents a command menu backed by the descriptor table in `src/app/types/CommandDescriptor.cpp`. Commands cover:
+- **Commands** — the UI presents a command menu backed by the descriptor table in `src/app/app_service/CommandDescriptor.cpp`. Commands cover:
   - plan management (`load_plan_from_path`, `load_plan_from_json_text`, `get_current_plan`, `check_current_plan`, `apply_current_plan`, `delete_current_plan`, `get_status`)
   - endpoint management (`add_mavlink_endpoint`, `edit_mavlink_endpoint`, `connect_mavlink_endpoint`, `disconnect_mavlink_endpoint`, `remove_mavlink_endpoint`, `get_endpoint_list`, `get_endpoint_status`, `get_endpoint_status_all`)
   - agent management (`add_agent`, `edit_agent`, `start_agent`, `stop_agent`, `remove_agent`, `get_agent_list`, `get_agent_status`, `get_agent_status_all`).

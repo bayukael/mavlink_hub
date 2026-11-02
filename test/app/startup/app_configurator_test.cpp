@@ -11,7 +11,7 @@ using pendarlab::app::mavlink_hub::LibInfo;
 using pendarlab::app::mavlink_hub::startup::applyConfig;
 using pendarlab::app::mavlink_hub::test::MockAppService;
 using pendarlab::app::mavlink_hub::test::MockLibLoader;
-using pendarlab::app::mavlink_hub::UserCommandType;
+using pendarlab::app::mavlink_hub::AppServiceCommandType;
 
 namespace
 {
@@ -112,7 +112,7 @@ TEST_F(AppConfiguratorTest, PlanLoadCommandShouldBeIssuedWhenStartupPlanPathSet)
 
   EXPECT_EQ(result.success, true);
   ASSERT_EQ(app_service.commands.size(), 1u);
-  EXPECT_EQ(app_service.commands[0].cmd_type, UserCommandType::LOAD_PLAN_FROM_PATH);
+  EXPECT_EQ(app_service.commands[0].cmd_type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
   EXPECT_EQ(app_service.commands[0].payload, "/path/to/plan.json");
 }
 
@@ -125,8 +125,8 @@ TEST_F(AppConfiguratorTest, PlanApplyCommandShouldBeIssuedWhenApplyOnStartup)
 
   EXPECT_EQ(result.success, true);
   ASSERT_EQ(app_service.commands.size(), 2u);
-  EXPECT_EQ(app_service.commands[0].cmd_type, UserCommandType::LOAD_PLAN_FROM_PATH);
-  EXPECT_EQ(app_service.commands[1].cmd_type, UserCommandType::APPLY_CURRENT_PLAN);
+  EXPECT_EQ(app_service.commands[0].cmd_type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
+  EXPECT_EQ(app_service.commands[1].cmd_type, AppServiceCommandType::APPLY_CURRENT_PLAN);
 }
 
 TEST_F(AppConfiguratorTest, PlanApplyShouldBeSkippedWhenLoadFails)
@@ -139,7 +139,7 @@ TEST_F(AppConfiguratorTest, PlanApplyShouldBeSkippedWhenLoadFails)
 
   EXPECT_EQ(result.success, false);
   ASSERT_EQ(app_service.commands.size(), 1u);
-  EXPECT_EQ(app_service.commands[0].cmd_type, UserCommandType::LOAD_PLAN_FROM_PATH);
+  EXPECT_EQ(app_service.commands[0].cmd_type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
 }
 
 int main(int argc, char** argv)

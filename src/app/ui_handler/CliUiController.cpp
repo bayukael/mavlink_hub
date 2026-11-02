@@ -146,8 +146,8 @@ namespace pendarlab::app::mavlink_hub
     // committed-command path, so it neither enqueues commands nor touches the
     // committed/selected command, payload, or result state. Called at UI start
     // and reusable by a later periodic refresh.
-    UserCommand agent_cmd;
-    agent_cmd.cmd_type = UserCommandType::GET_AGENT_STATUS_ALL;
+    AppServiceCommand agent_cmd;
+    agent_cmd.cmd_type = AppServiceCommandType::GET_AGENT_STATUS_ALL;
     const CommandResult agent_result = d->app_service.executeCommand(agent_cmd);
     if (agent_result.success) {
       auto entries = json_utils::agentStatusListFromJsonString(agent_result.data);
@@ -166,8 +166,8 @@ namespace pendarlab::app::mavlink_hub
       }
     }
 
-    UserCommand endpoint_cmd;
-    endpoint_cmd.cmd_type = UserCommandType::GET_ENDPOINT_STATUS_ALL;
+    AppServiceCommand endpoint_cmd;
+    endpoint_cmd.cmd_type = AppServiceCommandType::GET_ENDPOINT_STATUS_ALL;
     const CommandResult endpoint_result = d->app_service.executeCommand(endpoint_cmd);
     if (endpoint_result.success) {
       auto entries = json_utils::endpointStatusListFromJsonString(endpoint_result.data);
@@ -196,7 +196,7 @@ namespace pendarlab::app::mavlink_hub
       return;
     }
 
-    UserCommand cmd;
+    AppServiceCommand cmd;
     cmd.cmd_type = d->command_descriptors[static_cast<std::size_t>(d->committed_command)].type;
     cmd.payload = d->payload;
 

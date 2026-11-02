@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app/types/CommandDescriptor.h"
+#include "app/app_service/CommandDescriptor.h"
 
 #include <string>
 
@@ -10,8 +10,8 @@ namespace pendarlab::app::mavlink_hub
   ///
   /// The interpretation of \c payload depends on \c cmd_type; see CommandDescriptor for
   /// whether a payload is required and its expected shape.
-  struct UserCommand {
-    UserCommandType cmd_type;
+  struct AppServiceCommand {
+    AppServiceCommandType cmd_type;
     std::string payload;
   };
 
