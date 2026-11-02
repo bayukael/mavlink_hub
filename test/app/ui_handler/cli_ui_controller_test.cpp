@@ -177,7 +177,7 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartFetchesBothStatusAllProgramma
   app_service.endpoint_status_all["endpoint-1"] = 2; // MavlinkEndpointState::CONNECTED
   app_service.endpoint_status_all["endpoint-2"] = 0; // MavlinkEndpointState::DISCONNECTED
 
-  controller->populateOverviewOnStart();
+  controller->updateOverviewData();
 
   // Both commands were issued programmatically through the service.
   ASSERT_EQ(app_service.commands.size(), 2u);
@@ -233,7 +233,7 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartParsesReportedStatuses)
   app_service.endpoint_status_all["e1"] = 3; // MavlinkEndpointState::DISCONNECTING
   app_service.endpoint_status_all["e2"] = 1; // MavlinkEndpointState::CONNECTING
 
-  controller->populateOverviewOnStart();
+  controller->updateOverviewData();
 
   auto find_status = [](const std::vector<pendarlab::app::mavlink_hub::OverviewRow>& rows,
                         const std::string& name) -> std::string {
@@ -256,7 +256,7 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartParsesReportedStatuses)
 
 TEST_F(CliUiControllerTest, PopulateOverviewOnStartLeavesRowsEmptyWhenNoData)
 {
-  controller->populateOverviewOnStart();
+  controller->updateOverviewData();
   EXPECT_EQ(controller->agentRows().empty(), true);
   EXPECT_EQ(controller->endpointRows().empty(), true);
 }
@@ -277,7 +277,7 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterUserCommandPath)
 
   // Now run the startup fetch; it must add its two status commands without
   // disturbing the user's committed command, executing flag, or result.
-  controller->populateOverviewOnStart();
+  controller->updateOverviewData();
   ASSERT_EQ(app_service.commands.size(), 3u);
 
   EXPECT_EQ(controller->committedCommand(), 0);

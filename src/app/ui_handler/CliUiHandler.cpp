@@ -346,7 +346,7 @@ namespace pendarlab::app::mavlink_hub
     // hub state that already exists (e.g. a plan applied on startup) before the
     // UI first renders. This is a programmatic fetch that does not touch the
     // user-command execution path.
-    d->controller.populateOverviewOnStart();
+    d->controller.updateOverviewData();
 
     // When a command finishes on the worker thread, ask the UI loop to
     // redraw so the result/status pane reflects the new state without

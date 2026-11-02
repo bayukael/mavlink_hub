@@ -86,7 +86,7 @@ TEST_F(CliUiControllerPlanTest, OverviewReflectsAgentsAndEndpointsFromStartupLoa
   EXPECT_EQ(manager.getMavlinkEndpointList().size(), 2u);
 
   CliUiController controller(app_service);
-  controller.populateOverviewOnStart();
+  controller.updateOverviewData();
 
   auto find_status = [](const std::vector<OverviewRow>& rows, const std::string& name) -> std::string {
     for (const auto& row : rows) {
@@ -127,7 +127,7 @@ TEST_F(CliUiControllerPlanTest, OverviewShowsStartedAgentStateFromStartupLoadedP
   ASSERT_EQ(result.success, true);
 
   CliUiController controller(app_service);
-  controller.populateOverviewOnStart();
+  controller.updateOverviewData();
 
   ASSERT_EQ(controller.agentRows().size(), 1u);
   // The started MockAgent leaves IDLE (it reports ACTIVE while running).

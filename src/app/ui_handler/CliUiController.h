@@ -103,14 +103,15 @@ namespace pendarlab::app::mavlink_hub
     // executing. The view uses this to request a UI redraw.
     void setOnUpdate(std::function<void()> callback);
 
-    // Populates the overview agent/endpoint rows from the app service's current
+    // Refreshes the overview agent/endpoint rows from the app service's current
     // GET_AGENT_STATUS_ALL / GET_ENDPOINT_STATUS_ALL results, so the overview
-    // reflects hub state that already exists at startup (e.g. a plan applied on
-    // startup). This is a programmatic, one-time fetch: it calls executeCommand
-    // directly at initialization time and does NOT go through the committed
-    // command / [Execute Command] execution path (no command queue is involved),
-    // and it leaves the user-command execution state untouched.
-    void populateOverviewOnStart();
+    // reflects hub state that already exists (e.g. a plan applied on startup).
+    // This is a programmatic fetch: it calls executeCommand directly and does NOT
+    // go through the committed command / [Execute Command] execution path (no
+    // command queue is involved), and it leaves the user-command execution state
+    // untouched. Not tied to startup: a periodic refresh can call it again to
+    // re-fetch the same data.
+    void updateOverviewData();
 
     // Starts an async execution of the committed command with the current
     // payload. No-op while already executing or if no command is committed.

@@ -139,12 +139,13 @@ namespace pendarlab::app::mavlink_hub
     return d->endpoint_rows;
   }
 
-  void CliUiController::populateOverviewOnStart()
+  void CliUiController::updateOverviewData()
   {
-    // Programmatic, one-time startup fetch of the agents'/endpoints' list and
-    // status. This calls executeCommand directly (synchronously) rather than
-    // through the committed-command path, so it neither enqueues commands nor
-    // touches the committed/selected command, payload, or result state.
+    // Programmatic fetch of the agents'/endpoints' list and status. This calls
+    // executeCommand directly (synchronously) rather than through the
+    // committed-command path, so it neither enqueues commands nor touches the
+    // committed/selected command, payload, or result state. Called at UI start
+    // and reusable by a later periodic refresh.
     UserCommand agent_cmd;
     agent_cmd.cmd_type = UserCommandType::GET_AGENT_STATUS_ALL;
     const CommandResult agent_result = d->app_service.executeCommand(agent_cmd);
