@@ -1,0 +1,12 @@
+{
+  "policy": "best_effort",
+  "endpoint_list": [],
+  "agent_list": [
+    {
+      "name": "ag_started",
+      "type": "mock_agent",
+      "config": { "a_required_string": "" },
+      "start_on_create": true
+    }
+  ]
+}

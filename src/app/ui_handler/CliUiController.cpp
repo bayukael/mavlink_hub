@@ -1,8 +1,11 @@
 #include "app/ui_handler/CliUiController.h"
 
+#include "common/json_utils/JsonUtils.h"
+
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <utility>
 
 namespace pendarlab::app::mavlink_hub
 {
@@ -134,6 +137,51 @@ namespace pendarlab::app::mavlink_hub
   const std::vector<OverviewRow>& CliUiController::endpointRows() const
   {
     return d->endpoint_rows;
+  }
+
+  void CliUiController::populateOverviewOnStart()
+  {
+    // Programmatic, one-time startup fetch of the agents'/endpoints' list and
+    // status. This calls executeCommand directly (synchronously) rather than
+    // through the committed-command path, so it neither enqueues commands nor
+    // touches the committed/selected command, payload, or result state.
+    UserCommand agent_cmd;
+    agent_cmd.cmd_type = UserCommandType::GET_AGENT_STATUS_ALL;
+    const CommandResult agent_result = d->app_service.executeCommand(agent_cmd);
+    if (agent_result.success) {
+      auto entries = json_utils::agentStatusListFromJsonString(agent_result.data);
+      if (entries.has_value()) {
+        std::vector<OverviewRow> rows;
+        rows.reserve(entries->size());
+        for (auto& [name, status] : *entries) {
+          OverviewRow row;
+          row.name = std::move(name);
+          row.status = std::move(status);
+          // Type and Report are intentionally left blank: no layer stores an
+          // agent/endpoint type yet, and reports are a later (periodic) concern.
+          rows.push_back(std::move(row));
+        }
+        d->agent_rows = std::move(rows);
+      }
+    }
+
+    UserCommand endpoint_cmd;
+    endpoint_cmd.cmd_type = UserCommandType::GET_ENDPOINT_STATUS_ALL;
+    const CommandResult endpoint_result = d->app_service.executeCommand(endpoint_cmd);
+    if (endpoint_result.success) {
+      auto entries = json_utils::endpointStatusListFromJsonString(endpoint_result.data);
+      if (entries.has_value()) {
+        std::vector<OverviewRow> rows;
+        rows.reserve(entries->size());
+        for (auto& [name, status] : *entries) {
+          OverviewRow row;
+          row.name = std::move(name);
+          row.status = std::move(status);
+          rows.push_back(std::move(row));
+        }
+        d->endpoint_rows = std::move(rows);
+      }
+    }
   }
 
   void CliUiController::setOnUpdate(std::function<void()> callback)

@@ -1,0 +1,31 @@
+{
+  "policy": "best_effort",
+  "endpoint_list": [
+    {
+      "name": "ep_serial",
+      "type": "mock_byte_transport",
+      "config": { "a_required_string": "" },
+      "connect_on_create": false
+    },
+    {
+      "name": "ep_udp",
+      "type": "mock_byte_transport",
+      "config": { "a_required_string": "" },
+      "connect_on_create": false
+    }
+  ],
+  "agent_list": [
+    {
+      "name": "ag_iris",
+      "type": "mock_agent",
+      "config": { "a_required_string": "" },
+      "start_on_create": false
+    },
+    {
+      "name": "ag_heartbeat",
+      "type": "mock_agent",
+      "config": { "a_required_string": "" },
+      "start_on_create": false
+    }
+  ]
+}
