@@ -36,6 +36,8 @@ protected:
     manager.agent_list = { "agent-1", "agent-2" };
     manager.agent_states["agent-1"] = AgentState::ACTIVE;
     manager.agent_states["agent-2"] = AgentState::IDLE;
+    manager.agent_reports["agent-1"] = "MockAgent Report for agent-1";
+    manager.agent_reports["agent-2"] = "MockAgent Report for agent-2";
   }
 
   MockManager manager;
@@ -197,6 +199,63 @@ TEST_F(AppServiceGetCommandTest, GetAgentStatusAllSucceedsAndEncodesManagerState
   }
   EXPECT_EQ(name_to_status["agent-1"], "2"); // ACTIVE
   EXPECT_EQ(name_to_status["agent-2"], "0"); // IDLE
+}
+
+// ---------------------------------------------------------------------------
+// GET_AGENT_REPORT
+// ---------------------------------------------------------------------------
+TEST_F(AppServiceGetCommandTest, GetAgentReportSucceedsForRegisteredAgent)
+{
+  auto result = app_service.executeCommand(
+      commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT, "agent-1"));
+
+  ASSERT_EQ(result.success, true);
+
+  json j = json::parse(result.data);
+  ASSERT_TRUE(j.contains("agent_report"));
+  EXPECT_EQ(j["agent_report"]["name"].as_string(), "agent-1");
+  EXPECT_EQ(j["agent_report"]["report"].as_string(), "MockAgent Report for agent-1");
+}
+
+TEST_F(AppServiceGetCommandTest, GetAgentReportFailsWhenPayloadIsMissing)
+{
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT, ""));
+
+  ASSERT_EQ(result.success, false);
+  ASSERT_FALSE(result.message.empty());
+  EXPECT_NE(result.message[0].find("agent name is missing"), std::string::npos);
+}
+
+TEST_F(AppServiceGetCommandTest, GetAgentReportFailsForUnregisteredAgent)
+{
+  auto result = app_service.executeCommand(
+      commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT, "unknown-agent"));
+
+  ASSERT_EQ(result.success, false);
+  ASSERT_FALSE(result.message.empty());
+  EXPECT_NE(result.message[0].find("is not registered"), std::string::npos);
+}
+
+// ---------------------------------------------------------------------------
+// GET_AGENT_REPORT_ALL
+// ---------------------------------------------------------------------------
+TEST_F(AppServiceGetCommandTest, GetAgentReportAllSucceedsAndEncodesManagerReports)
+{
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT_ALL));
+
+  ASSERT_EQ(result.success, true);
+
+  json j = json::parse(result.data);
+  ASSERT_TRUE(j.contains("agent_report_list"));
+  ASSERT_TRUE(j["agent_report_list"].is_array());
+  ASSERT_EQ(j["agent_report_list"].size(), 2);
+
+  std::unordered_map<std::string, std::string> name_to_report;
+  for (const auto& entry : j["agent_report_list"].array_range()) {
+    name_to_report[entry["name"].as_string()] = entry["report"].as_string();
+  }
+  EXPECT_EQ(name_to_report["agent-1"], "MockAgent Report for agent-1");
+  EXPECT_EQ(name_to_report["agent-2"], "MockAgent Report for agent-2");
 }
 
 int main(int argc, char* argv[])

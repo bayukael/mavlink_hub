@@ -17,10 +17,11 @@ namespace pendarlab::app::mavlink_hub::test
 {
   /// Minimal fake of IManager for AppService tests.
   ///
-  /// Only the list/state query methods (getMavlinkEndpointList/getMavlinkEndpointState/
-  /// getMavlinkEndpointStateAll, getAgentList/getAgentState/getAgentStateAll) are backed
-  /// by settable data; every other method is a no-op returning a benign default. This keeps
-  /// the fake small while exercising AppService::executeCommand's query commands.
+  /// Only the query methods (getMavlinkEndpointList/getMavlinkEndpointState/
+  /// getMavlinkEndpointStateAll, getAgentList/getAgentState/getAgentStateAll,
+  /// getAgentReport/getAgentReportAll) are backed by settable data; every other
+  /// method is a no-op returning a benign default. This keeps the fake small while
+  /// exercising AppService::executeCommand's query commands.
   class MockManager : public IManager
   {
     using MavlinkEndpointState = pendarlab::lib::comm::MavlinkEndpointState;
@@ -33,6 +34,7 @@ namespace pendarlab::app::mavlink_hub::test
     std::unordered_map<std::string, MavlinkEndpointState> endpoint_states;
     std::vector<std::string> agent_list;
     std::unordered_map<std::string, AgentState> agent_states;
+    std::unordered_map<std::string, std::string> agent_reports;
 
     virtual ExecutionResultList validatePlan(const UserPlan& plan) override
     {
@@ -80,6 +82,20 @@ namespace pendarlab::app::mavlink_hub::test
     virtual std::unordered_map<std::string, AgentState> getAgentStateAll() override
     {
       return agent_states;
+    }
+
+    virtual std::optional<std::string> getAgentReport(const std::string& name) override
+    {
+      auto it = agent_reports.find(name);
+      if (it == agent_reports.end()) {
+        return std::nullopt;
+      }
+      return it->second;
+    }
+
+    virtual std::unordered_map<std::string, std::string> getAgentReportAll() override
+    {
+      return agent_reports;
     }
 
     virtual OperationResult validateMavlinkEndpointConfig(const std::string& type,

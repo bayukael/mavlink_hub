@@ -211,6 +211,31 @@ namespace pendarlab::app::mavlink_hub
         break;
       }
 
+      case UserCommandType::GET_AGENT_REPORT: {
+        if (cmd.payload.empty()) {
+          result.success = false;
+          result.message.push_back("[AppService]: Agent report is not retrieved because the agent name is missing");
+          break;
+        }
+        auto agent_report = d->manager.getAgentReport(cmd.payload);
+        if (!agent_report.has_value()) {
+          result.success = false;
+          result.message.push_back("[AppService]: Agent report is not retrieved because the agent name [" + cmd.payload + "] is not registered");
+          break;
+        }
+        result.success = true;
+        result.message.push_back("[AppService]: Agent report has been retrieved.");
+        result.data = json_utils::agentReportToJsonString(cmd.payload, agent_report.value());
+        break;
+      }
+
+      case UserCommandType::GET_AGENT_REPORT_ALL: {
+        result.success = true;
+        result.message.push_back("[AppService]: Agent reports have been retrieved.");
+        result.data = json_utils::agentReportListToJsonString(d->manager.getAgentReportAll());
+        break;
+      }
+
       default: break;
     }
     return result;

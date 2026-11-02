@@ -43,6 +43,16 @@ namespace pendarlab::app::mavlink_hub::json_utils
   /// Serialize a name->agent-state map to a JSON string under the "agent_status_list" key.
   std::string agentStatusListToJsonString(const std::unordered_map<std::string, pendarlab::sdk::mavlink_hub::AgentState>& list);
 
+  /// Serialize a single agent's report to a JSON string under the "agent_report" key.
+  ///
+  /// The report string is transported as-is; no format is imposed on its content.
+  std::string agentReportToJsonString(const std::string& name, const std::string& report);
+
+  /// Serialize a name->agent-report map to a JSON string under the "agent_report_list" key.
+  ///
+  /// Each report string is transported as-is; no format is imposed on its content.
+  std::string agentReportListToJsonString(const std::unordered_map<std::string, std::string>& list);
+
   /// Serialize an endpoint name list to a JSON string under the "endpoint_list" key.
   std::string endpointListToJsonString(const std::vector<std::string>& list);
 
