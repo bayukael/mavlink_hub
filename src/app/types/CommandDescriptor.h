@@ -30,6 +30,8 @@ namespace pendarlab::app::mavlink_hub
     GET_AGENT_LIST,
     GET_AGENT_STATUS,
     GET_AGENT_STATUS_ALL,
+    GET_AGENT_REPORT,
+    GET_AGENT_REPORT_ALL,
   };
 
   /// Static metadata for one user command, surfaced to the CLI UI.

@@ -9,7 +9,7 @@ using pendarlab::app::mavlink_hub::UserCommandType;
 
 namespace
 {
-  constexpr int kExpectedCommandCount = 23;
+  constexpr int kExpectedCommandCount = 25;
 }
 
 class CommandDescriptorTest : public testing::Test
@@ -29,6 +29,8 @@ TEST_F(CommandDescriptorTest, EntriesAreOrderedLikeTheEnum)
   ASSERT_GE(descriptors.size(), 1u);
   EXPECT_EQ(descriptors[0].type, UserCommandType::LOAD_PLAN_FROM_PATH);
   EXPECT_EQ(descriptors[static_cast<std::size_t>(UserCommandType::GET_AGENT_STATUS_ALL)].type, UserCommandType::GET_AGENT_STATUS_ALL);
+  EXPECT_EQ(descriptors[static_cast<std::size_t>(UserCommandType::GET_AGENT_REPORT)].type, UserCommandType::GET_AGENT_REPORT);
+  EXPECT_EQ(descriptors[static_cast<std::size_t>(UserCommandType::GET_AGENT_REPORT_ALL)].type, UserCommandType::GET_AGENT_REPORT_ALL);
 }
 
 TEST_F(CommandDescriptorTest, NamesAreUniqueAndNonEmpty)

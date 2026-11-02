@@ -397,6 +397,29 @@ namespace pendarlab::app::mavlink_hub::json_utils
     return j_res.as_string();
   }
 
+  std::string agentReportToJsonString(const std::string& name, const std::string& report)
+  {
+    json j_res;
+    json j_entry;
+    j_entry["name"] = name;
+    j_entry["report"] = report;
+    j_res["agent_report"] = j_entry;
+    return j_res.as_string();
+  }
+
+  std::string agentReportListToJsonString(const std::unordered_map<std::string, std::string>& list)
+  {
+    json j_res;
+    j_res["agent_report_list"] = json{ json_array_arg };
+    for (const auto& [name, report] : list) {
+      json j_entry;
+      j_entry["name"] = name;
+      j_entry["report"] = report;
+      j_res["agent_report_list"].push_back(j_entry);
+    }
+    return j_res.as_string();
+  }
+
   std::string endpointStatusListToJsonString(const std::unordered_map<std::string, pendarlab::lib::comm::MavlinkEndpointState>& list)
   {
     json j_res;

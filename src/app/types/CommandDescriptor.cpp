@@ -7,8 +7,8 @@ namespace pendarlab::app::mavlink_hub
 {
   namespace
   {
-    constexpr std::size_t kCommandCount = 23;
-    static_assert(kCommandCount == static_cast<std::size_t>(UserCommandType::GET_AGENT_STATUS_ALL) + 1,
+    constexpr std::size_t kCommandCount = 25;
+    static_assert(kCommandCount == static_cast<std::size_t>(UserCommandType::GET_AGENT_REPORT_ALL) + 1,
                   "CommandDescriptor table must have one entry per UserCommandType enumerator");
 
     constexpr std::array<CommandDescriptor, kCommandCount> kCommands = {
@@ -36,6 +36,8 @@ namespace pendarlab::app::mavlink_hub
        { UserCommandType::GET_AGENT_LIST, "get_agent_list", false, "" },
        { UserCommandType::GET_AGENT_STATUS, "get_agent_status", true, "agent name" },
        { UserCommandType::GET_AGENT_STATUS_ALL, "get_agent_status_all", false, "" },
+       { UserCommandType::GET_AGENT_REPORT, "get_agent_report", true, "agent name" },
+       { UserCommandType::GET_AGENT_REPORT_ALL, "get_agent_report_all", false, "" },
        }
     };
   } // namespace
