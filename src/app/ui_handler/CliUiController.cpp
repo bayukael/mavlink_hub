@@ -28,7 +28,6 @@ namespace pendarlab::app::mavlink_hub
     std::vector<OverviewRow> endpoint_rows;
 
     bool validCommittedCommand() const;
-    void executeCommandAsync(const UserCommand& cmd);
   };
 
   CliUiController::CliUiControllerImpl::CliUiControllerImpl(IAppService& appsrv) : app_service(appsrv)
@@ -44,25 +43,7 @@ namespace pendarlab::app::mavlink_hub
     return committed_command >= 0 && committed_command < static_cast<int>(command_descriptors.size());
   }
 
-  void CliUiController::CliUiControllerImpl::executeCommandAsync(const UserCommand& cmd)
-  {
-    if (execute_thread.joinable()) {
-      execute_thread.join();
-    }
-
-    execute_thread = std::thread([this, cmd]() {
-      CommandResult result = app_service.executeCommand(cmd);
-      {
-        std::lock_guard<std::mutex> lock(result_mutex);
-        command_result = std::move(result);
-        executing = false;
-      }
-      if (on_update) {
-        on_update();
-      }
-    });
-  }
-
+  
   CliUiController::CliUiController(IAppService& appsrv) : d(std::make_unique<CliUiControllerImpl>(appsrv))
   {
   }
@@ -160,7 +141,7 @@ namespace pendarlab::app::mavlink_hub
     d->on_update = std::move(callback);
   }
 
-  void CliUiController::executeCurrentCommand()
+    void CliUiController::executeCurrentCommand()
   {
     if (!d->validCommittedCommand()) {
       return;
@@ -179,7 +160,23 @@ namespace pendarlab::app::mavlink_hub
       d->executed_command = std::string(d->command_descriptors[static_cast<std::size_t>(d->committed_command)].name);
     }
 
-    d->executeCommandAsync(cmd);
+    // Responds to the [Execute Command] button: this is the single command
+    // execution entry point and the only caller of the worker execution path.
+    // The worker thread runs the committed command on the app service, guards
+    // the result, and reports back through on_update.
+    joinExecution();
+
+    d->execute_thread = std::thread([this, cmd]() {
+      CommandResult result = d->app_service.executeCommand(cmd);
+      {
+        std::lock_guard<std::mutex> lock(d->result_mutex);
+        d->command_result = std::move(result);
+        d->executing = false;
+      }
+      if (d->on_update) {
+        d->on_update();
+      }
+    });
   }
 
   void CliUiController::joinExecution()
