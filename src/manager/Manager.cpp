@@ -121,6 +121,10 @@ namespace pendarlab::app::mavlink_hub
         } else {
           OperationResult add_result = addAgent(ag_name, ag_spec.type, ag_spec.config);
           exec_result.merge(add_result);
+          if (add_result.success && ag_spec.start_on_create) {
+            OperationResult start_result = startAgent(ag_name);
+            exec_result.merge(start_result);
+          }
         }
       }
       result.agent_plan_result[ag_name] = exec_result;

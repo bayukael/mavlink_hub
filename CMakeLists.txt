@@ -356,6 +356,8 @@ target_link_libraries(mavlink_hub
 add_library(MavlinkHubMockAgent SHARED
   test/mock_agent/MockAgent.cpp
   test/mock_agent/MockAgentDefinition.cpp
+  test/mock_agent/MockFailStartAgent.cpp
+  test/mock_agent/MockFailStartAgentDefinition.cpp
 )
 target_include_directories(MavlinkHubMockAgent PUBLIC 
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>

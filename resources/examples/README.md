@@ -34,7 +34,8 @@ Both files declare one serial MAVLink endpoint and one Gazebo bridge agent.
     {
       "name": "unique agent name",
       "type": "registered agent type name",
-      "config": { "key": "string value", ... }   // string->string map, validated by the agent's config parser
+      "config": { "key": "string value", ... },  // string->string map, validated by the agent's config parser
+      "start_on_create": true | false            // optional; default false
     }
   ]
 }
@@ -47,6 +48,10 @@ Notes:
   and agents reference endpoints by their `name` (e.g. `mavlink_endpoint_name`).
 - `type` values must match the names the corresponding plugin libraries are
   registered under in the app config (`transport_lib_list` / `agent_lib_list`).
+- `connect_on_create` on an endpoint entry connects the endpoint as part of plan
+  execution; `start_on_create` on an agent entry starts the agent after it is
+  created as part of plan execution. Both default to `false`, so omitting them
+  keeps the entry created/added but not connected/started.
 
 ### Policies
 

@@ -321,6 +321,61 @@ TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithDiscardPolicyAndSomeInvalidEntrie
   EXPECT_EQ(parsed_plan.has_value(), false);
 }
 
+// start_on_create is an optional per-agent flag: it must be parsed when
+// present, and default to false when absent so existing plan files are
+// backward compatible.
+TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithStartOnCreateFlagIsParsedProperly)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  std::string plan_str = R"({
+    "policy": "best_effort",
+    "agent_list": [
+      { "name": "agent-1", "type": "agent-type-1", "config": {}, "start_on_create": true },
+      { "name": "agent-2", "type": "agent-type-2", "config": {}, "start_on_create": false },
+      { "name": "agent-3", "type": "agent-type-3", "config": {} }
+    ]
+  })";
+
+  std::optional<UserPlan> parsed_plan = json_utils::stringToUserPlan(plan_str);
+  ASSERT_EQ(parsed_plan.has_value(), true);
+  auto& user_plan = parsed_plan.value();
+
+  ASSERT_EQ(user_plan.agent_list.size(), 3);
+  EXPECT_EQ(user_plan.agent_list["agent-1"].start_on_create, true);
+  EXPECT_EQ(user_plan.agent_list["agent-2"].start_on_create, false);
+  // Absent flag defaults to false.
+  EXPECT_EQ(user_plan.agent_list["agent-3"].start_on_create, false);
+}
+
+TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithNonBoolStartOnCreateIsRejectedUnderDiscard)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  std::string plan_str = R"({
+    "policy": "discard",
+    "agent_list": [
+      { "name": "agent-1", "type": "agent-type-1", "config": {}, "start_on_create": "yes" }
+    ]
+  })";
+
+  std::optional<UserPlan> parsed_plan = json_utils::stringToUserPlan(plan_str);
+  EXPECT_EQ(parsed_plan.has_value(), false);
+}
+
+TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithNonBoolStartOnCreateIsSkippedUnderBestEffort)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  std::string plan_str = R"({
+    "policy": "best_effort",
+    "agent_list": [
+      { "name": "agent-1", "type": "agent-type-1", "config": {}, "start_on_create": "yes" }
+    ]
+  })";
+
+  std::optional<UserPlan> parsed_plan = json_utils::stringToUserPlan(plan_str);
+  ASSERT_EQ(parsed_plan.has_value(), true);
+  EXPECT_EQ(parsed_plan.value().agent_list.size(), 0);
+}
+
 class ExecutionResultListToJsonStringTest : public testing::Test
 {
 protected:

@@ -13,14 +13,17 @@
 #include <memory>
 #include <mock_agent/MockAgent.h>
 #include <mock_agent/MockAgentDefinition.h>
+#include <mock_agent/MockFailStartAgentDefinition.h>
 #include <mock_byte_transport/MockByteTransportDefinition.h>
 #include <string>
 #include <vector>
 
 using MockAgentDefinition = pendarlab::app::mavlink_hub::test::MockAgentDefinition;
+using MockFailStartAgentDefinition = pendarlab::app::mavlink_hub::test::MockFailStartAgentDefinition;
 using MockByteTransportDefinition = pendarlab::app::mavlink_hub::test::MockByteTransportDefinition;
 
 static MockAgentDefinition g_mock_agent_def;
+static MockFailStartAgentDefinition g_mock_fail_start_agent_def;
 static MockByteTransportDefinition g_mock_byte_transport_def;
 
 using TransportRegistry = pendarlab::lib::comm::byte_transport::Registry;
@@ -53,6 +56,7 @@ protected:
 
 static const std::string g_mock_transport_name("mock_byte_transport");
 static const std::string g_mock_agent_name("mock_agent");
+static const std::string g_mock_fail_start_agent_name("mock_fail_start_agent");
 
 ManagerTestSetup::ManagerTestSetup() :
     transport_registry_user(transport_registry.createUser()),
@@ -61,6 +65,7 @@ ManagerTestSetup::ManagerTestSetup() :
 {
   transport_registry.addTransportDefinition(g_mock_transport_name, g_mock_byte_transport_def);
   agent_registry.addAgentDefinition(g_mock_agent_name, g_mock_agent_def);
+  agent_registry.addAgentDefinition(g_mock_fail_start_agent_name, g_mock_fail_start_agent_def);
 }
 
 // TEST - [ ManagerInitialTest ]
@@ -703,6 +708,129 @@ TEST_F(UserPlanExecutionWithEmptyManagerTest, ExecutingDiscardPolicyValidUserPla
 
   EXPECT_EQ(manager.getAgentList().size(), 0);
   EXPECT_EQ(manager.getMavlinkEndpointList().size(), 0);
+}
+
+// TEST - [ UserPlanExecutionStartOnCreateTest ]
+// - Given an empty manager and a BEST_EFFORT user plan whose agent entry has start_on_create=true,
+//   the agent is created and then started, so it ends in a non-IDLE state and its result reports both
+//   the add and the start succeeding.
+// - Given an empty manager and a BEST_EFFORT user plan whose agent entry has start_on_create=false
+//   (or the flag absent), the agent is created and left IDLE, matching previous behavior.
+// - Given an empty manager and a BEST_EFFORT user plan whose agent is added successfully but fails
+//   to start (start_on_create=true, agent whose start always fails), the failure is reported in the
+//   entry result while the agent remains created.
+class UserPlanExecutionStartOnCreateTest : public testing::Test, public ManagerTestSetup, public UserPlanSetup
+{
+protected:
+  void SetUp() override { plan.agent_list.clear(); }
+  void TearDown() override {}
+};
+
+TEST_F(UserPlanExecutionStartOnCreateTest, StartOnCreateTrueShouldStartTheAgent)
+{
+  plan.policy = UserPlanPolicy::BEST_EFFORT;
+  std::string ag_name = "ag1";
+  plan.agent_list.emplace(ag_name, [&]() {
+    AgentEntry entry;
+    entry.type = g_mock_agent_name;
+    entry.config["a_required_string"] = "";
+    entry.start_on_create = true;
+    return entry;
+  }());
+
+  ExecutionResultList result = manager.executePlan(plan);
+
+  auto it = result.agent_plan_result.find(ag_name);
+  ASSERT_NE(it, result.agent_plan_result.end());
+  EXPECT_EQ(it->second.success, true);
+
+  // The agent is created and running (non-IDLE).
+  auto state = manager.getAgentState(ag_name);
+  ASSERT_NE(state, std::nullopt);
+  EXPECT_NE(state.value(), AgentState::IDLE);
+
+  // The result should mention both the add and the start.
+  std::string messages;
+  for (const auto& msg : it->second.messages) {
+    messages += msg + "\n";
+  }
+  EXPECT_NE(messages.find("added"), std::string::npos);
+  EXPECT_NE(messages.find("started"), std::string::npos);
+}
+
+TEST_F(UserPlanExecutionStartOnCreateTest, StartOnCreateFalseShouldLeaveAgentIdle)
+{
+  plan.policy = UserPlanPolicy::BEST_EFFORT;
+  std::string ag_name = "ag1";
+  plan.agent_list.emplace(ag_name, [&]() {
+    AgentEntry entry;
+    entry.type = g_mock_agent_name;
+    entry.config["a_required_string"] = "";
+    entry.start_on_create = false;
+    return entry;
+  }());
+
+  ExecutionResultList result = manager.executePlan(plan);
+
+  auto it = result.agent_plan_result.find(ag_name);
+  ASSERT_NE(it, result.agent_plan_result.end());
+  EXPECT_EQ(it->second.success, true);
+
+  auto state = manager.getAgentState(ag_name);
+  ASSERT_NE(state, std::nullopt);
+  EXPECT_EQ(state.value(), AgentState::IDLE);
+}
+
+TEST_F(UserPlanExecutionStartOnCreateTest, StartOnCreateAbsentShouldLeaveAgentIdle)
+{
+  plan.policy = UserPlanPolicy::BEST_EFFORT;
+  std::string ag_name = "ag1";
+  AgentEntry entry;
+  entry.type = g_mock_agent_name;
+  entry.config["a_required_string"] = "";
+  // start_on_create left at its default (false).
+  plan.agent_list.emplace(ag_name, entry);
+
+  ExecutionResultList result = manager.executePlan(plan);
+
+  auto it = result.agent_plan_result.find(ag_name);
+  ASSERT_NE(it, result.agent_plan_result.end());
+  EXPECT_EQ(it->second.success, true);
+
+  auto state = manager.getAgentState(ag_name);
+  ASSERT_NE(state, std::nullopt);
+  EXPECT_EQ(state.value(), AgentState::IDLE);
+}
+
+TEST_F(UserPlanExecutionStartOnCreateTest, StartFailureShouldBeReportedButCreationKept)
+{
+  plan.policy = UserPlanPolicy::BEST_EFFORT;
+  std::string ag_name = "ag_fail_start";
+  AgentEntry entry;
+  entry.type = g_mock_fail_start_agent_name;
+  entry.config["a_required_string"] = "";
+  entry.start_on_create = true;
+  plan.agent_list.emplace(ag_name, entry);
+
+  ExecutionResultList result = manager.executePlan(plan);
+
+  auto it = result.agent_plan_result.find(ag_name);
+  ASSERT_NE(it, result.agent_plan_result.end());
+  // The merged result is not a success because the start failed.
+  EXPECT_EQ(it->second.success, false);
+
+  // The agent remains created, in its post-start-attempt (IDLE) state.
+  EXPECT_EQ(manager.getAgentList().size(), 1);
+  auto state = manager.getAgentState(ag_name);
+  ASSERT_NE(state, std::nullopt);
+  EXPECT_EQ(state.value(), AgentState::IDLE);
+
+  // The failure is reported in the entry's messages.
+  std::string messages;
+  for (const auto& msg : it->second.messages) {
+    messages += msg + "\n";
+  }
+  EXPECT_NE(messages.find("Failed to start"), std::string::npos);
 }
 
 // TEST - [ UserPlanExecutionWithNonEmptyManagerTest ]

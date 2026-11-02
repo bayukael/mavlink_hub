@@ -87,6 +87,15 @@ namespace pendarlab::app::mavlink_hub::json_utils
         }
       }
 
+      // start_on_create is optional; if present it must be a bool.
+      if (entry.contains("start_on_create") && !entry["start_on_create"].is_bool()) {
+        if (policy == UserPlanPolicy::BEST_EFFORT) {
+          continue;
+        } else {
+          return std::nullopt;
+        }
+      }
+
       std::unordered_map<std::string, std::string> config;
       for (const auto& config_entry : entry["config"].object_range()) {
         config[config_entry.key()] = config_entry.value().as_string();
@@ -94,9 +103,11 @@ namespace pendarlab::app::mavlink_hub::json_utils
 
       const std::string& name = entry["name"].as_string();
       const std::string& type = entry["type"].as_string();
+      const bool start_on_create = entry.contains("start_on_create") ? entry["start_on_create"].as_bool() : false;
       AgentEntry agent_entry;
       agent_entry.type = type;
       agent_entry.config = config;
+      agent_entry.start_on_create = start_on_create;
       agent_list[name] = agent_entry;
     }
     return agent_list;
