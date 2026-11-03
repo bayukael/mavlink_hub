@@ -2,7 +2,7 @@
 
 #include "app/lib_loader/ILibLoader.h"
 #include "app/types/CommandResult.h"
-#include "app/types/CommandDescriptor.h"
+#include "app/app_service/CommandDescriptor.h"
 #include "common/json_utils/JsonUtils.h"
 
 #include <fstream>
@@ -30,11 +30,11 @@ namespace pendarlab::app::mavlink_hub
   AppService::AppService(AppService&&) noexcept = default;
   AppService& AppService::operator=(AppService&&) noexcept = default;
 
-  CommandResult AppService::executeCommand(const UserCommand& cmd)
+  CommandResult AppService::executeCommand(const AppServiceCommand& cmd)
   {
     CommandResult result;
     switch (cmd.cmd_type) {
-      case UserCommandType::LOAD_PLAN_FROM_PATH: {
+      case AppServiceCommandType::LOAD_PLAN_FROM_PATH: {
         std::ifstream file_stream(cmd.payload);
         if (file_stream.is_open()) {
           std::optional<UserPlan> user_plan = json_utils::fstreamToUserPlan(file_stream);
@@ -53,7 +53,7 @@ namespace pendarlab::app::mavlink_hub
         break;
       }
 
-      case UserCommandType::LOAD_PLAN_FROM_JSON_TEXT: {
+      case AppServiceCommandType::LOAD_PLAN_FROM_JSON_TEXT: {
         std::optional<UserPlan> user_plan = json_utils::stringToUserPlan(cmd.payload);
         if (user_plan.has_value()) {
           d->current_plan = user_plan;
@@ -66,11 +66,11 @@ namespace pendarlab::app::mavlink_hub
         break;
       }
 
-      case UserCommandType::GET_CURRENT_PLAN:
+      case AppServiceCommandType::GET_CURRENT_PLAN:
         /* code */
         break;
 
-      case UserCommandType::CHECK_CURRENT_PLAN: {
+      case AppServiceCommandType::CHECK_CURRENT_PLAN: {
         if (d->current_plan.has_value()) {
           auto execute_result = d->manager.validatePlan(d->current_plan.value());
           result.success = true;
@@ -83,7 +83,7 @@ namespace pendarlab::app::mavlink_hub
         break;
       }
 
-      case UserCommandType::APPLY_CURRENT_PLAN: {
+      case AppServiceCommandType::APPLY_CURRENT_PLAN: {
         if (d->current_plan.has_value()) {
           auto execute_result = d->manager.executePlan(d->current_plan.value());
           result.success = true;
@@ -96,45 +96,45 @@ namespace pendarlab::app::mavlink_hub
         break;
       }
 
-      case UserCommandType::DELETE_CURRENT_PLAN: {
+      case AppServiceCommandType::DELETE_CURRENT_PLAN: {
         d->current_plan = std::nullopt;
         result.success = true;
         result.message.push_back("[AppService]: Current plan is removed. There is no loaded plan now.");
         break;
       }
 
-      case UserCommandType::GET_STATUS:
+      case AppServiceCommandType::GET_STATUS:
         /* code */
         break;
 
-      case UserCommandType::ADD_MAVLINK_ENDPOINT:
+      case AppServiceCommandType::ADD_MAVLINK_ENDPOINT:
         /* code */
         break;
 
-      case UserCommandType::EDIT_MAVLINK_ENDPOINT:
+      case AppServiceCommandType::EDIT_MAVLINK_ENDPOINT:
         /* code */
         break;
 
-      case UserCommandType::CONNECT_MAVLINK_ENDPOINT:
+      case AppServiceCommandType::CONNECT_MAVLINK_ENDPOINT:
         /* code */
         break;
 
-      case UserCommandType::DISCONNECT_MAVLINK_ENDPOINT:
+      case AppServiceCommandType::DISCONNECT_MAVLINK_ENDPOINT:
         /* code */
         break;
 
-      case UserCommandType::REMOVE_MAVLINK_ENDPOINT:
+      case AppServiceCommandType::REMOVE_MAVLINK_ENDPOINT:
         /* code */
         break;
 
-      case UserCommandType::GET_ENDPOINT_LIST: {
+      case AppServiceCommandType::GET_ENDPOINT_LIST: {
         result.success = true;
         result.message.push_back("[AppService]: Endpoint list has been retrieved.");
         result.data = json_utils::endpointListToJsonString(d->manager.getMavlinkEndpointList());
         break;
       }
 
-      case UserCommandType::GET_ENDPOINT_STATUS: {
+      case AppServiceCommandType::GET_ENDPOINT_STATUS: {
         if (cmd.payload.empty()) {
           result.success = false;
           result.message.push_back("[AppService]: Endpoint status is not retrieved because the endpoint name is missing");
@@ -152,41 +152,41 @@ namespace pendarlab::app::mavlink_hub
         break;
       }
 
-      case UserCommandType::GET_ENDPOINT_STATUS_ALL: {
+      case AppServiceCommandType::GET_ENDPOINT_STATUS_ALL: {
         result.success = true;
         result.message.push_back("[AppService]: Endpoint statuses have been retrieved.");
         result.data = json_utils::endpointStatusListToJsonString(d->manager.getMavlinkEndpointStateAll());
         break;
       }
 
-      case UserCommandType::ADD_AGENT:
+      case AppServiceCommandType::ADD_AGENT:
         /* code */
         break;
 
-      case UserCommandType::EDIT_AGENT:
+      case AppServiceCommandType::EDIT_AGENT:
         /* code */
         break;
 
-      case UserCommandType::START_AGENT:
+      case AppServiceCommandType::START_AGENT:
         /* code */
         break;
 
-      case UserCommandType::STOP_AGENT:
+      case AppServiceCommandType::STOP_AGENT:
         /* code */
         break;
 
-      case UserCommandType::REMOVE_AGENT:
+      case AppServiceCommandType::REMOVE_AGENT:
         /* code */
         break;
 
-      case UserCommandType::GET_AGENT_LIST: {
+      case AppServiceCommandType::GET_AGENT_LIST: {
         result.success = true;
         result.message.push_back("[AppService]: Agent list has been retrieved.");
         result.data = json_utils::agentListToJsonString(d->manager.getAgentList());
         break;
       }
 
-      case UserCommandType::GET_AGENT_STATUS: {
+      case AppServiceCommandType::GET_AGENT_STATUS: {
         if (cmd.payload.empty()) {
           result.success = false;
           result.message.push_back("[AppService]: Agent status is not retrieved because the agent name is missing");
@@ -204,14 +204,14 @@ namespace pendarlab::app::mavlink_hub
         break;
       }
 
-      case UserCommandType::GET_AGENT_STATUS_ALL: {
+      case AppServiceCommandType::GET_AGENT_STATUS_ALL: {
         result.success = true;
         result.message.push_back("[AppService]: Agent statuses have been retrieved.");
         result.data = json_utils::agentStatusListToJsonString(d->manager.getAgentStateAll());
         break;
       }
 
-      case UserCommandType::GET_AGENT_REPORT: {
+      case AppServiceCommandType::GET_AGENT_REPORT: {
         if (cmd.payload.empty()) {
           result.success = false;
           result.message.push_back("[AppService]: Agent report is not retrieved because the agent name is missing");
@@ -229,7 +229,7 @@ namespace pendarlab::app::mavlink_hub
         break;
       }
 
-      case UserCommandType::GET_AGENT_REPORT_ALL: {
+      case AppServiceCommandType::GET_AGENT_REPORT_ALL: {
         result.success = true;
         result.message.push_back("[AppService]: Agent reports have been retrieved.");
         result.data = json_utils::agentReportListToJsonString(d->manager.getAgentReportAll());

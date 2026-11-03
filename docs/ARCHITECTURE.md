@@ -88,7 +88,7 @@ flowchart TB
     APP["Application"]
     MGR["Manager"]
 
-    UI -->|"UserCommand / CommandResult"| APP
+    UI -->|"AppServiceCommand / CommandResult"| APP
     APP -->|"IManager"| MGR
   end
 
@@ -114,7 +114,7 @@ inside the hub runtime by the Manager.*
 - **UI** — the operator-facing front end. Model/view split: `CliUiController`
   (framework-agnostic model) and `CliUiHandler` (the ftxui view + thread).
 - **Application** — the composition root and command front end. Holds `App`, `AppService`
-  (the `UserCommand`/`IManager` mediator), `LibLoader` (dlopen plugin loading), and the
+  (the `AppServiceCommand`/`IManager` mediator), `LibLoader` (dlopen plugin loading), and the
   startup/shutdown wiring.
 - **Manager** — the domain core. Owns the live agent and endpoint instances and is their
   lifecycle factory, backed by the plugin-definition registries. Exposes everything through
@@ -267,7 +267,7 @@ handler.
 
 #### 3.2.2 AppService
 
-The mediator between the UI and the **Manager**. It receives a `UserCommand`, dispatches to the
+The mediator between the UI and the **Manager**. It receives a `AppServiceCommand`, dispatches to the
 appropriate Manager operation (or plugin loader), and returns a `CommandResult`. It tracks the
 currently loaded `UserPlan`.
 
@@ -375,19 +375,19 @@ status bar, result pane), owns the UI thread, and drives the ftxui event loop.
 - `getResult` — currently a stub.
 
 **User command flow:** menu selection → `commitCommand` → payload input → "Execute Command" →
-`executeCurrentCommand()` builds a `UserCommand{type, payload}` → worker thread calls
+`executeCurrentCommand()` builds a `AppServiceCommand{type, payload}` → worker thread calls
 `app_service.executeCommand(cmd)` → result stored + `onUpdate()` triggers a redraw.
 
 ### 3.4 Types Component
 
 Data types shared by the application and UI layers (`app/types/`).
 
-- **`UserCommand`** — `{ UserCommandType cmd_type; std::string payload; }`: one user request.
-- **`UserCommandType`** — 23 command enumerators (plan lifecycle, status, endpoint management,
+- **`AppServiceCommand`** — `{ AppServiceCommandType cmd_type; std::string payload; }`: one user request.
+- **`AppServiceCommandType`** — 23 command enumerators (plan lifecycle, status, endpoint management,
   agent management).
-- **`CommandDescriptor`** — `{ UserCommandType type; std::string_view name; bool
+- **`CommandDescriptor`** — `{ AppServiceCommandType type; std::string_view name; bool
   requires_payload; std::string_view payload_hint; }`: describes a command for the UI menu.
-- **`commandDescriptors()`** — the canonical `constexpr std::array` table (one entry per
+- **`appServiceCommandDescriptors()`** — the canonical `constexpr std::array` table (one entry per
   enumerator, guarded by `static_assert`) the UI uses to build the menu.
 - **`CommandResult`** — `{ bool success; std::vector<std::string> message; std::string
   data; }`: the outcome of a command.

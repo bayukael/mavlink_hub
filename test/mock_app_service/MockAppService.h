@@ -2,7 +2,7 @@
 
 #include "app/app_service/IAppService.h"
 #include "app/types/CommandResult.h"
-#include "app/types/UserCommand.h"
+#include "app/types/AppServiceCommand.h"
 
 #include <chrono>
 #include <optional>
@@ -16,9 +16,9 @@ namespace pendarlab::app::mavlink_hub::test
   class MockAppService : public IAppService
   {
   public:
-    CommandResult executeCommand(const UserCommand& cmd) override;
+    CommandResult executeCommand(const AppServiceCommand& cmd) override;
 
-    std::vector<UserCommand> commands;
+    std::vector<AppServiceCommand> commands;
     bool fail_load_plan = false;
     bool fail_apply_plan = false;
 
@@ -32,7 +32,7 @@ namespace pendarlab::app::mavlink_hub::test
     // Optional: make a specific command sleep before returning, to give a
     // window for testing async / ignored-execute behavior. Default (no
     // slow_command, or zero delay) leaves existing behavior unchanged.
-    std::optional<UserCommandType> slow_command;
+    std::optional<AppServiceCommandType> slow_command;
     std::chrono::milliseconds slow_delay{};
 
   private:
@@ -54,7 +54,7 @@ namespace pendarlab::app::mavlink_hub::test
     return out;
   }
 
-  inline CommandResult MockAppService::executeCommand(const UserCommand& cmd)
+  inline CommandResult MockAppService::executeCommand(const AppServiceCommand& cmd)
   {
     commands.push_back(cmd);
 
@@ -65,12 +65,12 @@ namespace pendarlab::app::mavlink_hub::test
     CommandResult result;
     result.success = true;
     switch (cmd.cmd_type) {
-      case UserCommandType::LOAD_PLAN_FROM_PATH: result.success = !fail_load_plan; break;
-      case UserCommandType::APPLY_CURRENT_PLAN: result.success = !fail_apply_plan; break;
-      case UserCommandType::GET_AGENT_STATUS_ALL:
+      case AppServiceCommandType::LOAD_PLAN_FROM_PATH: result.success = !fail_load_plan; break;
+      case AppServiceCommandType::APPLY_CURRENT_PLAN: result.success = !fail_apply_plan; break;
+      case AppServiceCommandType::GET_AGENT_STATUS_ALL:
         result.data = encodeStatusList("agent_status_list", agent_status_all);
         break;
-      case UserCommandType::GET_ENDPOINT_STATUS_ALL:
+      case AppServiceCommandType::GET_ENDPOINT_STATUS_ALL:
         result.data = encodeStatusList("endpoint_status_list", endpoint_status_all);
         break;
       default: break;

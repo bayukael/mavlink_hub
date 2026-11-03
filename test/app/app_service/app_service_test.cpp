@@ -1,6 +1,6 @@
 #include "app/app_service/AppService.h"
 #include "app/types/CommandResult.h"
-#include "app/types/UserCommand.h"
+#include "app/types/AppServiceCommand.h"
 #include "common/types/OperationResult.h"
 #include "manager/IManager.h"
 
@@ -44,10 +44,10 @@ protected:
   MockLibLoader lib_loader;
   pendarlab::app::mavlink_hub::AppService app_service;
 
-  static pendarlab::app::mavlink_hub::UserCommand commandFor(pendarlab::app::mavlink_hub::UserCommandType type,
+  static pendarlab::app::mavlink_hub::AppServiceCommand commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType type,
                                                              const std::string& payload = "")
   {
-    return pendarlab::app::mavlink_hub::UserCommand{ type, payload };
+    return pendarlab::app::mavlink_hub::AppServiceCommand{ type, payload };
   }
 };
 
@@ -56,7 +56,7 @@ protected:
 // ---------------------------------------------------------------------------
 TEST_F(AppServiceGetCommandTest, GetEndpointListSucceedsAndEncodesManagerList)
 {
-  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_ENDPOINT_LIST));
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_ENDPOINT_LIST));
 
   ASSERT_EQ(result.success, true);
 
@@ -74,7 +74,7 @@ TEST_F(AppServiceGetCommandTest, GetEndpointListSucceedsAndEncodesManagerList)
 TEST_F(AppServiceGetCommandTest, GetEndpointStatusSucceedsForRegisteredEndpoint)
 {
   auto result = app_service.executeCommand(
-      commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_ENDPOINT_STATUS, "endpoint-1"));
+      commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_ENDPOINT_STATUS, "endpoint-1"));
 
   ASSERT_EQ(result.success, true);
 
@@ -85,7 +85,7 @@ TEST_F(AppServiceGetCommandTest, GetEndpointStatusSucceedsForRegisteredEndpoint)
 
 TEST_F(AppServiceGetCommandTest, GetEndpointStatusFailsWhenPayloadIsMissing)
 {
-  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_ENDPOINT_STATUS, ""));
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_ENDPOINT_STATUS, ""));
 
   ASSERT_EQ(result.success, false);
   ASSERT_EQ(result.message.empty(), false);
@@ -95,7 +95,7 @@ TEST_F(AppServiceGetCommandTest, GetEndpointStatusFailsWhenPayloadIsMissing)
 TEST_F(AppServiceGetCommandTest, GetEndpointStatusFailsForUnregisteredEndpoint)
 {
   auto result = app_service.executeCommand(
-      commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_ENDPOINT_STATUS, "unknown-endpoint"));
+      commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_ENDPOINT_STATUS, "unknown-endpoint"));
 
   ASSERT_EQ(result.success, false);
   ASSERT_EQ(result.message.empty(), false);
@@ -107,7 +107,7 @@ TEST_F(AppServiceGetCommandTest, GetEndpointStatusFailsForUnregisteredEndpoint)
 // ---------------------------------------------------------------------------
 TEST_F(AppServiceGetCommandTest, GetEndpointStatusAllSucceedsAndEncodesManagerStates)
 {
-  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_ENDPOINT_STATUS_ALL));
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_ENDPOINT_STATUS_ALL));
 
   ASSERT_EQ(result.success, true);
 
@@ -131,7 +131,7 @@ TEST_F(AppServiceGetCommandTest, GetEndpointStatusAllSucceedsAndEncodesManagerSt
 // ---------------------------------------------------------------------------
 TEST_F(AppServiceGetCommandTest, GetAgentListSucceedsAndEncodesManagerList)
 {
-  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_LIST));
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_AGENT_LIST));
 
   ASSERT_EQ(result.success, true);
 
@@ -149,7 +149,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentListSucceedsAndEncodesManagerList)
 TEST_F(AppServiceGetCommandTest, GetAgentStatusSucceedsForRegisteredAgent)
 {
   auto result = app_service.executeCommand(
-      commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_STATUS, "agent-1"));
+      commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_AGENT_STATUS, "agent-1"));
 
   ASSERT_EQ(result.success, true);
 
@@ -160,7 +160,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentStatusSucceedsForRegisteredAgent)
 
 TEST_F(AppServiceGetCommandTest, GetAgentStatusFailsWhenPayloadIsMissing)
 {
-  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_STATUS, ""));
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_AGENT_STATUS, ""));
 
   ASSERT_EQ(result.success, false);
   ASSERT_EQ(result.message.empty(), false);
@@ -170,7 +170,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentStatusFailsWhenPayloadIsMissing)
 TEST_F(AppServiceGetCommandTest, GetAgentStatusFailsForUnregisteredAgent)
 {
   auto result = app_service.executeCommand(
-      commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_STATUS, "unknown-agent"));
+      commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_AGENT_STATUS, "unknown-agent"));
 
   ASSERT_EQ(result.success, false);
   ASSERT_EQ(result.message.empty(), false);
@@ -182,7 +182,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentStatusFailsForUnregisteredAgent)
 // ---------------------------------------------------------------------------
 TEST_F(AppServiceGetCommandTest, GetAgentStatusAllSucceedsAndEncodesManagerStates)
 {
-  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_STATUS_ALL));
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_AGENT_STATUS_ALL));
 
   ASSERT_EQ(result.success, true);
 
@@ -207,7 +207,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentStatusAllSucceedsAndEncodesManagerState
 TEST_F(AppServiceGetCommandTest, GetAgentReportSucceedsForRegisteredAgent)
 {
   auto result = app_service.executeCommand(
-      commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT, "agent-1"));
+      commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_AGENT_REPORT, "agent-1"));
 
   ASSERT_EQ(result.success, true);
 
@@ -219,7 +219,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentReportSucceedsForRegisteredAgent)
 
 TEST_F(AppServiceGetCommandTest, GetAgentReportFailsWhenPayloadIsMissing)
 {
-  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT, ""));
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_AGENT_REPORT, ""));
 
   ASSERT_EQ(result.success, false);
   ASSERT_EQ(result.message.empty(), false);
@@ -229,7 +229,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentReportFailsWhenPayloadIsMissing)
 TEST_F(AppServiceGetCommandTest, GetAgentReportFailsForUnregisteredAgent)
 {
   auto result = app_service.executeCommand(
-      commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT, "unknown-agent"));
+      commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_AGENT_REPORT, "unknown-agent"));
 
   ASSERT_EQ(result.success, false);
   ASSERT_EQ(result.message.empty(), false);
@@ -241,7 +241,7 @@ TEST_F(AppServiceGetCommandTest, GetAgentReportFailsForUnregisteredAgent)
 // ---------------------------------------------------------------------------
 TEST_F(AppServiceGetCommandTest, GetAgentReportAllSucceedsAndEncodesManagerReports)
 {
-  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::UserCommandType::GET_AGENT_REPORT_ALL));
+  auto result = app_service.executeCommand(commandFor(pendarlab::app::mavlink_hub::AppServiceCommandType::GET_AGENT_REPORT_ALL));
 
   ASSERT_EQ(result.success, true);
 

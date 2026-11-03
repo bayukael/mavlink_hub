@@ -7,7 +7,7 @@
 
 using pendarlab::app::mavlink_hub::CliUiController;
 using pendarlab::app::mavlink_hub::CommandDescriptor;
-using pendarlab::app::mavlink_hub::UserCommandType;
+using pendarlab::app::mavlink_hub::AppServiceCommandType;
 using pendarlab::app::mavlink_hub::test::MockAppService;
 
 namespace
@@ -28,7 +28,7 @@ TEST_F(CliUiControllerTest, LoadsCommandDescriptorsFromService)
 {
   ASSERT_GT(controller->commandDescriptors().size(), 0u);
   ASSERT_EQ(controller->commandDescriptors().size(), controller->commandEntries().size());
-  EXPECT_EQ(controller->commandDescriptors()[0].type, UserCommandType::LOAD_PLAN_FROM_PATH);
+  EXPECT_EQ(controller->commandDescriptors()[0].type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
   EXPECT_EQ(controller->commandEntries()[0], std::string(controller->commandDescriptors()[0].name));
 }
 
@@ -57,7 +57,7 @@ TEST_F(CliUiControllerTest, ExecuteDispatchesCommittedCommandTypeAndPayload)
   controller->joinExecution();
 
   ASSERT_EQ(app_service.commands.size(), 1u);
-  EXPECT_EQ(app_service.commands[0].cmd_type, UserCommandType::LOAD_PLAN_FROM_PATH);
+  EXPECT_EQ(app_service.commands[0].cmd_type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
   EXPECT_EQ(app_service.commands[0].payload, "{\"path\": \"/tmp/plan.json\"}");
 }
 
@@ -74,13 +74,13 @@ TEST_F(CliUiControllerTest, StoresResultAfterExecution)
 
 TEST_F(CliUiControllerTest, OnUpdateInvokedWhenCommandCompletes)
 {
-  app_service.slow_command = UserCommandType::APPLY_CURRENT_PLAN;
+  app_service.slow_command = AppServiceCommandType::APPLY_CURRENT_PLAN;
   app_service.slow_delay = kSlowDelay;
 
   std::atomic<int> update_count{ 0 };
   controller->setOnUpdate([&] { update_count.fetch_add(1); });
 
-  const int apply_index = static_cast<int>(UserCommandType::APPLY_CURRENT_PLAN);
+  const int apply_index = static_cast<int>(AppServiceCommandType::APPLY_CURRENT_PLAN);
   controller->commitCommand(apply_index);
   controller->executeCurrentCommand();
   controller->joinExecution();
@@ -91,10 +91,10 @@ TEST_F(CliUiControllerTest, OnUpdateInvokedWhenCommandCompletes)
 
 TEST_F(CliUiControllerTest, MarksExecutingWhileInFlightAndClearsAfter)
 {
-  app_service.slow_command = UserCommandType::APPLY_CURRENT_PLAN;
+  app_service.slow_command = AppServiceCommandType::APPLY_CURRENT_PLAN;
   app_service.slow_delay = kSlowDelay;
 
-  const int apply_index = static_cast<int>(UserCommandType::APPLY_CURRENT_PLAN);
+  const int apply_index = static_cast<int>(AppServiceCommandType::APPLY_CURRENT_PLAN);
   controller->commitCommand(apply_index);
 
   std::atomic<bool> observed_executing{ false };
@@ -108,10 +108,10 @@ TEST_F(CliUiControllerTest, MarksExecutingWhileInFlightAndClearsAfter)
 
 TEST_F(CliUiControllerTest, IgnoresSecondExecuteWhileInFlight)
 {
-  app_service.slow_command = UserCommandType::APPLY_CURRENT_PLAN;
+  app_service.slow_command = AppServiceCommandType::APPLY_CURRENT_PLAN;
   app_service.slow_delay = kSlowDelay;
 
-  const int apply_index = static_cast<int>(UserCommandType::APPLY_CURRENT_PLAN);
+  const int apply_index = static_cast<int>(AppServiceCommandType::APPLY_CURRENT_PLAN);
   controller->commitCommand(apply_index);
 
   controller->executeCurrentCommand();
@@ -123,7 +123,7 @@ TEST_F(CliUiControllerTest, IgnoresSecondExecuteWhileInFlight)
 
 TEST_F(CliUiControllerTest, ExecutedCommandNameReflectsCommittedCommand)
 {
-  const int apply_index = static_cast<int>(UserCommandType::APPLY_CURRENT_PLAN);
+  const int apply_index = static_cast<int>(AppServiceCommandType::APPLY_CURRENT_PLAN);
   controller->commitCommand(apply_index);
   controller->executeCurrentCommand();
   controller->joinExecution();
@@ -181,8 +181,8 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartFetchesBothStatusAllProgramma
 
   // Both commands were issued programmatically through the service.
   ASSERT_EQ(app_service.commands.size(), 2u);
-  EXPECT_EQ(app_service.commands[0].cmd_type, UserCommandType::GET_AGENT_STATUS_ALL);
-  EXPECT_EQ(app_service.commands[1].cmd_type, UserCommandType::GET_ENDPOINT_STATUS_ALL);
+  EXPECT_EQ(app_service.commands[0].cmd_type, AppServiceCommandType::GET_AGENT_STATUS_ALL);
+  EXPECT_EQ(app_service.commands[1].cmd_type, AppServiceCommandType::GET_ENDPOINT_STATUS_ALL);
   // No user interaction is involved: the committed command is untouched.
   EXPECT_EQ(controller->committedCommand(), -1);
 
@@ -261,7 +261,7 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartLeavesRowsEmptyWhenNoData)
   EXPECT_EQ(controller->endpointRows().empty(), true);
 }
 
-TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterUserCommandPath)
+TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterAppServiceCommandPath)
 {
   // The startup fetch must not touch the user-command execution path: the
   // committed command, executing flag, and result stay as the user left them,
@@ -289,7 +289,7 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterUserCommandPath)
   controller->executeCurrentCommand();
   controller->joinExecution();
   ASSERT_EQ(app_service.commands.size(), 4u);
-  EXPECT_EQ(app_service.commands[3].cmd_type, UserCommandType::LOAD_PLAN_FROM_PATH);
+  EXPECT_EQ(app_service.commands[3].cmd_type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
   EXPECT_EQ(app_service.commands[3].payload, "{\"path\": \"/tmp/plan.json\"}");
 }
 

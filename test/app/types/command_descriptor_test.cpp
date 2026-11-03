@@ -1,11 +1,11 @@
-#include "app/types/CommandDescriptor.h"
+#include "app/app_service/CommandDescriptor.h"
 
 #include <gtest/gtest.h>
 #include <set>
 #include <string>
 
-using pendarlab::app::mavlink_hub::commandDescriptors;
-using pendarlab::app::mavlink_hub::UserCommandType;
+using pendarlab::app::mavlink_hub::appServiceCommandDescriptors;
+using pendarlab::app::mavlink_hub::AppServiceCommandType;
 
 namespace
 {
@@ -18,34 +18,34 @@ protected:
   void SetUp() override {}
 };
 
-TEST_F(CommandDescriptorTest, HasOneEntryPerUserCommandType)
+TEST_F(CommandDescriptorTest, HasOneEntryPerAppServiceCommandType)
 {
-  EXPECT_EQ(commandDescriptors().size(), static_cast<std::size_t>(kExpectedCommandCount));
+  EXPECT_EQ(appServiceCommandDescriptors().size(), static_cast<std::size_t>(kExpectedCommandCount));
 }
 
 TEST_F(CommandDescriptorTest, EntriesAreOrderedLikeTheEnum)
 {
-  const auto& descriptors = commandDescriptors();
+  const auto& descriptors = appServiceCommandDescriptors();
   ASSERT_GE(descriptors.size(), 1u);
-  EXPECT_EQ(descriptors[0].type, UserCommandType::LOAD_PLAN_FROM_PATH);
-  EXPECT_EQ(descriptors[static_cast<std::size_t>(UserCommandType::GET_AGENT_STATUS_ALL)].type, UserCommandType::GET_AGENT_STATUS_ALL);
-  EXPECT_EQ(descriptors[static_cast<std::size_t>(UserCommandType::GET_AGENT_REPORT)].type, UserCommandType::GET_AGENT_REPORT);
-  EXPECT_EQ(descriptors[static_cast<std::size_t>(UserCommandType::GET_AGENT_REPORT_ALL)].type, UserCommandType::GET_AGENT_REPORT_ALL);
+  EXPECT_EQ(descriptors[0].type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
+  EXPECT_EQ(descriptors[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS_ALL)].type, AppServiceCommandType::GET_AGENT_STATUS_ALL);
+  EXPECT_EQ(descriptors[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT)].type, AppServiceCommandType::GET_AGENT_REPORT);
+  EXPECT_EQ(descriptors[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL)].type, AppServiceCommandType::GET_AGENT_REPORT_ALL);
 }
 
 TEST_F(CommandDescriptorTest, NamesAreUniqueAndNonEmpty)
 {
   std::set<std::string> names;
-  for (const auto& descriptor : commandDescriptors()) {
+  for (const auto& descriptor : appServiceCommandDescriptors()) {
     EXPECT_EQ(false, descriptor.name.empty());
     EXPECT_EQ(true, names.insert(std::string(descriptor.name)).second) << "duplicate name: " << descriptor.name;
   }
-  EXPECT_EQ(names.size(), commandDescriptors().size());
+  EXPECT_EQ(names.size(), appServiceCommandDescriptors().size());
 }
 
 TEST_F(CommandDescriptorTest, PayloadHintIsEmptyWhenNoPayloadRequired)
 {
-  for (const auto& descriptor : commandDescriptors()) {
+  for (const auto& descriptor : appServiceCommandDescriptors()) {
     if (!descriptor.requires_payload) {
       EXPECT_EQ(true, descriptor.payload_hint.empty()) << "hint should be empty for: " << descriptor.name;
     }

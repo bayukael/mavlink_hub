@@ -1,15 +1,15 @@
 #pragma once
 
-#include "app/types/CommandDescriptor.h"
+#include "app/app_service/CommandDescriptor.h"
 #include "app/types/CommandResult.h"
-#include "app/types/UserCommand.h"
+#include "app/types/AppServiceCommand.h"
 
 namespace pendarlab::app::mavlink_hub
 {
   /// Service facade that turns user commands into manager/loader operations.
   ///
   /// The service holds application-level state (such as the current user plan) and mediates
-  /// between incoming UserCommands and the manager/lib loader. The CLI UI talks to the
+  /// between incoming AppServiceCommands and the manager/lib loader. The CLI UI talks to the
   /// application exclusively through this interface.
   class IAppService
   {
@@ -24,9 +24,9 @@ namespace pendarlab::app::mavlink_hub
     /// operation succeeding for every entry.
     /// @param cmd the command to execute.
     /// @return the command outcome.
-    virtual CommandResult executeCommand(const UserCommand& cmd) = 0;
+    virtual CommandResult executeCommand(const AppServiceCommand& cmd) = 0;
 
     /// @return the canonical descriptor table for all supported commands.
-    virtual std::vector<CommandDescriptor> getCommandDescriptors() const { return commandDescriptors(); }
+    virtual std::vector<CommandDescriptor> getCommandDescriptors() const { return appServiceCommandDescriptors(); }
   };
 } // namespace pendarlab::app::mavlink_hub
