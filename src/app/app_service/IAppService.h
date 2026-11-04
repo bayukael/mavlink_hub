@@ -2,7 +2,7 @@
 
 #include "app/app_service/CommandDescriptor.h"
 #include "app/types/CommandResult.h"
-#include "app/types/AppServiceCommand.h"
+#include "app/app_service/AppServiceCommand.h"
 
 namespace pendarlab::app::mavlink_hub
 {

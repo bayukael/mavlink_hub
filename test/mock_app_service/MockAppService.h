@@ -2,7 +2,7 @@
 
 #include "app/app_service/IAppService.h"
 #include "app/types/CommandResult.h"
-#include "app/types/AppServiceCommand.h"
+#include "app/app_service/AppServiceCommand.h"
 
 #include <chrono>
 #include <optional>
