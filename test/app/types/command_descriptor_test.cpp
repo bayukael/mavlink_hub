@@ -1,4 +1,4 @@
-#include "app/app_service/CommandDescriptor.h"
+#include "app/app_service/AppServiceCommandDescriptor.h"
 
 #include <gtest/gtest.h>
 #include <set>
@@ -12,18 +12,18 @@ namespace
   constexpr int kExpectedCommandCount = 25;
 }
 
-class CommandDescriptorTest : public testing::Test
+class AppServiceCommandDescriptorTest : public testing::Test
 {
 protected:
   void SetUp() override {}
 };
 
-TEST_F(CommandDescriptorTest, HasOneEntryPerAppServiceCommandType)
+TEST_F(AppServiceCommandDescriptorTest, HasOneEntryPerAppServiceCommandType)
 {
   EXPECT_EQ(appServiceCommandDescriptors().size(), static_cast<std::size_t>(kExpectedCommandCount));
 }
 
-TEST_F(CommandDescriptorTest, EntriesAreOrderedLikeTheEnum)
+TEST_F(AppServiceCommandDescriptorTest, EntriesAreOrderedLikeTheEnum)
 {
   const auto& descriptors = appServiceCommandDescriptors();
   ASSERT_GE(descriptors.size(), 1u);
@@ -33,7 +33,7 @@ TEST_F(CommandDescriptorTest, EntriesAreOrderedLikeTheEnum)
   EXPECT_EQ(descriptors[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL)].type, AppServiceCommandType::GET_AGENT_REPORT_ALL);
 }
 
-TEST_F(CommandDescriptorTest, NamesAreUniqueAndNonEmpty)
+TEST_F(AppServiceCommandDescriptorTest, NamesAreUniqueAndNonEmpty)
 {
   std::set<std::string> names;
   for (const auto& descriptor : appServiceCommandDescriptors()) {
@@ -43,7 +43,7 @@ TEST_F(CommandDescriptorTest, NamesAreUniqueAndNonEmpty)
   EXPECT_EQ(names.size(), appServiceCommandDescriptors().size());
 }
 
-TEST_F(CommandDescriptorTest, PayloadHintIsEmptyWhenNoPayloadRequired)
+TEST_F(AppServiceCommandDescriptorTest, PayloadHintIsEmptyWhenNoPayloadRequired)
 {
   for (const auto& descriptor : appServiceCommandDescriptors()) {
     if (!descriptor.requires_payload) {

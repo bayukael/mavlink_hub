@@ -385,7 +385,7 @@ Data types shared by the application and UI layers (`app/types/`).
 - **`AppServiceCommand`** — `{ AppServiceCommandType cmd_type; std::string payload; }`: one user request.
 - **`AppServiceCommandType`** — 23 command enumerators (plan lifecycle, status, endpoint management,
   agent management).
-- **`CommandDescriptor`** — `{ AppServiceCommandType type; std::string_view name; bool
+- **`AppServiceCommandDescriptor`** — `{ AppServiceCommandType type; std::string_view name; bool
   requires_payload; std::string_view payload_hint; }`: describes a command for the UI menu.
 - **`appServiceCommandDescriptors()`** — the canonical `constexpr std::array` table (one entry per
   enumerator, guarded by `static_assert`) the UI uses to build the menu.
@@ -491,7 +491,7 @@ GTest executables are run directly from the build dir (no ctest). Two kinds of m
 | `MavlinkHubStartupAppConfiguratorTest` | `applyConfig` wiring |
 | `MavlinkHubStartupArgsParserTest` | CLI11 arg parsing |
 | `MavlinkHubCliUiControllerTest` | Controller model (dispatch, async, callbacks) |
-| `MavlinkHubCommandDescriptorTest` | Command descriptor table integrity |
+| `MavlinkHubAppServiceCommandDescriptorTest` | Command descriptor table integrity |
 | `MavlinkHubSignalHandlerTest` | SIGINT/SIGTERM trigger cooperative shutdown; off unless explicitly started |
 | `MavlinkHubAppServiceTest` / `MavlinkHubAppTest` | Declared but **incomplete** (no `target_link_libraries`) |
 | `MavlinkHubCliUiPreview` | Manual TUI preview (not a test) |

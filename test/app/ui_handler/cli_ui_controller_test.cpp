@@ -6,7 +6,7 @@
 #include <gtest/gtest.h>
 
 using pendarlab::app::mavlink_hub::CliUiController;
-using pendarlab::app::mavlink_hub::CommandDescriptor;
+using pendarlab::app::mavlink_hub::AppServiceCommandDescriptor;
 using pendarlab::app::mavlink_hub::AppServiceCommandType;
 using pendarlab::app::mavlink_hub::test::MockAppService;
 
