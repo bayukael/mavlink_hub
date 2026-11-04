@@ -1,7 +1,7 @@
 #include "app/startup/AppConfigurator.h"
 
 #include "app/types/CommandResult.h"
-#include "app/types/AppServiceCommand.h"
+#include "app/app_service/AppServiceCommand.h"
 #include "app/app_service/CommandDescriptor.h"
 #include "common/json_utils/JsonUtils.h"
 

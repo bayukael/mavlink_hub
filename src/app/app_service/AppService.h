@@ -3,7 +3,7 @@
 #include "app/app_service/IAppService.h"
 #include "app/lib_loader/ILibLoader.h"
 #include "app/types/CommandResult.h"
-#include "app/types/AppServiceCommand.h"
+#include "app/app_service/AppServiceCommand.h"
 #include "manager/IManager.h"
 
 #include <memory>

@@ -1,6 +1,6 @@
 #include "app/app_service/AppService.h"
 #include "app/types/CommandResult.h"
-#include "app/types/AppServiceCommand.h"
+#include "app/app_service/AppServiceCommand.h"
 #include "common/types/OperationResult.h"
 #include "manager/IManager.h"
 
