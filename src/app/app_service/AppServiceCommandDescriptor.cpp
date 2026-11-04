@@ -11,6 +11,17 @@ namespace pendarlab::app::mavlink_hub
     static_assert(kCommandCount == static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL) + 1,
                   "AppServiceCommandDescriptor table must have one entry per AppServiceCommandType enumerator");
 
+    // The descriptor table is indexed by static_cast<std::size_t>(AppServiceCommandType),
+    // so the first enumerator must have value 0 for the mapping to be correct.
+    static_assert(static_cast<std::size_t>(AppServiceCommandType::LOAD_PLAN_FROM_PATH) == 0,
+                  "AppServiceCommandType must start at 0 so it stays aligned with the kCommands descriptor table");
+
+    // Canonical descriptor table for all commands, one entry per
+    // AppServiceCommandType enumerator, in enum order. Adding a command requires
+    // editing BOTH AppServiceCommandType (AppServiceCommandDescriptor.h) and this
+    // table together, inserting the new command in the same position in both, and
+    // keeping the first enumerator (LOAD_PLAN_FROM_PATH) at value 0, so the enum
+    // and table stay aligned as the command set grows.
     constexpr std::array<AppServiceCommandDescriptor, kCommandCount> kCommands = {
       {
        { AppServiceCommandType::LOAD_PLAN_FROM_PATH, "load_plan_from_path", true, "path to .json plan" },
