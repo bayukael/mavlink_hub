@@ -6,6 +6,14 @@
 namespace pendarlab::app::mavlink_hub
 {
   /// The set of user commands the app service understands.
+  ///
+  /// The enumerators must stay aligned with the canonical kCommands descriptor
+  /// table in AppServiceCommandDescriptor.cpp:
+  ///  - Adding a command means editing BOTH this enum and kCommands, inserting
+  ///    the new command in the same position/order in both places.
+  ///  - The first enumerator must keep value 0 (LOAD_PLAN_FROM_PATH remains the
+  ///    zero-th command); this is enforced by a static_assert in the .cpp.
+  ///  - The relative order of existing enumerators must not change.
   enum class AppServiceCommandType {
     LOAD_PLAN_FROM_PATH,
     LOAD_PLAN_FROM_JSON_TEXT,
@@ -45,6 +53,10 @@ namespace pendarlab::app::mavlink_hub
   // Canonical descriptor table for all commands, indexed by AppServiceCommandType
   // (one entry per enumerator, in enum order). Single source of truth for the
   // command names and payload metadata surfaced to the CLI UI.
+  //
+  // Keep this table aligned with AppServiceCommandType (AppServiceCommandDescriptor.h):
+  // adding a command requires editing the enum and this table together, in the
+  // same order, keeping the first enumerator (LOAD_PLAN_FROM_PATH) at value 0.
   const std::vector<AppServiceCommandDescriptor>& appServiceCommandDescriptors();
 
 } // namespace pendarlab::app::mavlink_hub
