@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app/app_service/CommandDescriptor.h"
+#include "app/app_service/AppServiceCommandDescriptor.h"
 
 #include <string>
 
@@ -8,7 +8,7 @@ namespace pendarlab::app::mavlink_hub
 {
   /// A user-facing command targeting the app service, with a string payload.
   ///
-  /// The interpretation of \c payload depends on \c cmd_type; see CommandDescriptor for
+  /// The interpretation of \c payload depends on \c cmd_type; see AppServiceCommandDescriptor for
   /// whether a payload is required and its expected shape.
   struct AppServiceCommand {
     AppServiceCommandType cmd_type;

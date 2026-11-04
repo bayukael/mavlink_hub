@@ -2,7 +2,7 @@
 
 #include "app/lib_loader/ILibLoader.h"
 #include "app/types/CommandResult.h"
-#include "app/app_service/CommandDescriptor.h"
+#include "app/app_service/AppServiceCommandDescriptor.h"
 #include "common/json_utils/JsonUtils.h"
 
 #include <fstream>

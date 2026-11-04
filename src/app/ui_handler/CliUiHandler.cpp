@@ -54,8 +54,8 @@ namespace pendarlab::app::mavlink_hub
   CliUiHandler::CliUiHandlerImpl::CliUiHandlerImpl(IAppService& appsrv, ShutdownController& shutdown_controller)
       : shutdown_controller(shutdown_controller), controller(appsrv)
   {
-    const std::vector<CommandDescriptor>& descriptors = controller.commandDescriptors();
-    for (const CommandDescriptor& descriptor : descriptors) {
+    const std::vector<AppServiceCommandDescriptor>& descriptors = controller.commandDescriptors();
+    for (const AppServiceCommandDescriptor& descriptor : descriptors) {
       max_command_name_len = std::max(max_command_name_len, static_cast<int>(descriptor.name.size()));
     }
 
@@ -109,9 +109,9 @@ namespace pendarlab::app::mavlink_hub
       std::string selected_name = "none";
       std::string payload_hint = "-";
       const int committed_command = controller.committedCommand();
-      const std::vector<CommandDescriptor>& descriptors = controller.commandDescriptors();
+      const std::vector<AppServiceCommandDescriptor>& descriptors = controller.commandDescriptors();
       if (committed_command >= 0 && committed_command < static_cast<int>(descriptors.size())) {
-        const CommandDescriptor& descriptor = descriptors[static_cast<std::size_t>(committed_command)];
+        const AppServiceCommandDescriptor& descriptor = descriptors[static_cast<std::size_t>(committed_command)];
         selected_name = std::string(descriptor.name);
         payload_hint = descriptor.requires_payload ? "required" : "not required";
       }
@@ -380,7 +380,7 @@ namespace pendarlab::app::mavlink_hub
     if (d->controller.executing()) {
       std::string waiting_for = "a command";
       const int committed_command = d->controller.committedCommand();
-      const std::vector<CommandDescriptor>& descriptors = d->controller.commandDescriptors();
+      const std::vector<AppServiceCommandDescriptor>& descriptors = d->controller.commandDescriptors();
       if (committed_command >= 0 && committed_command < static_cast<int>(descriptors.size())) {
         waiting_for = std::string(descriptors[static_cast<std::size_t>(committed_command)].name);
       }

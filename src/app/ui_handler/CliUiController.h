@@ -1,7 +1,7 @@
 #pragma once
 
 #include "app/app_service/IAppService.h"
-#include "app/app_service/CommandDescriptor.h"
+#include "app/app_service/AppServiceCommandDescriptor.h"
 #include "app/types/CommandResult.h"
 
 #include <functional>
@@ -43,7 +43,7 @@ namespace pendarlab::app::mavlink_hub
     CliUiController& operator=(CliUiController&&) noexcept;
 
     /// @return the command descriptors loaded from the service.
-    const std::vector<CommandDescriptor>& commandDescriptors() const;
+    const std::vector<AppServiceCommandDescriptor>& commandDescriptors() const;
 
     /// @return display names for every command (one per descriptor).
     const std::vector<std::string>& commandEntries() const;

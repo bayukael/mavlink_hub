@@ -35,7 +35,7 @@ namespace pendarlab::app::mavlink_hub
   };
 
   /// Static metadata for one user command, surfaced to the CLI UI.
-  struct CommandDescriptor {
+  struct AppServiceCommandDescriptor {
     AppServiceCommandType type;          ///< The command this descriptor describes.
     std::string_view name;         ///< Canonical command name as typed in the UI.
     bool requires_payload;         ///< Whether the command needs a payload to execute.
@@ -45,6 +45,6 @@ namespace pendarlab::app::mavlink_hub
   // Canonical descriptor table for all commands, indexed by AppServiceCommandType
   // (one entry per enumerator, in enum order). Single source of truth for the
   // command names and payload metadata surfaced to the CLI UI.
-  const std::vector<CommandDescriptor>& appServiceCommandDescriptors();
+  const std::vector<AppServiceCommandDescriptor>& appServiceCommandDescriptors();
 
 } // namespace pendarlab::app::mavlink_hub

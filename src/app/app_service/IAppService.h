@@ -1,6 +1,6 @@
 #pragma once
 
-#include "app/app_service/CommandDescriptor.h"
+#include "app/app_service/AppServiceCommandDescriptor.h"
 #include "app/types/CommandResult.h"
 #include "app/app_service/AppServiceCommand.h"
 
@@ -27,6 +27,6 @@ namespace pendarlab::app::mavlink_hub
     virtual CommandResult executeCommand(const AppServiceCommand& cmd) = 0;
 
     /// @return the canonical descriptor table for all supported commands.
-    virtual std::vector<CommandDescriptor> getCommandDescriptors() const { return appServiceCommandDescriptors(); }
+    virtual std::vector<AppServiceCommandDescriptor> getCommandDescriptors() const { return appServiceCommandDescriptors(); }
   };
 } // namespace pendarlab::app::mavlink_hub

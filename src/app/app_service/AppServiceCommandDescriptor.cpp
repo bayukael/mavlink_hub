@@ -1,4 +1,4 @@
-#include "app/app_service/CommandDescriptor.h"
+#include "app/app_service/AppServiceCommandDescriptor.h"
 
 #include <array>
 #include <cstddef>
@@ -9,9 +9,9 @@ namespace pendarlab::app::mavlink_hub
   {
     constexpr std::size_t kCommandCount = 25;
     static_assert(kCommandCount == static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL) + 1,
-                  "CommandDescriptor table must have one entry per AppServiceCommandType enumerator");
+                  "AppServiceCommandDescriptor table must have one entry per AppServiceCommandType enumerator");
 
-    constexpr std::array<CommandDescriptor, kCommandCount> kCommands = {
+    constexpr std::array<AppServiceCommandDescriptor, kCommandCount> kCommands = {
       {
        { AppServiceCommandType::LOAD_PLAN_FROM_PATH, "load_plan_from_path", true, "path to .json plan" },
        { AppServiceCommandType::LOAD_PLAN_FROM_JSON_TEXT, "load_plan_from_json_text", true, "plan JSON text" },
@@ -42,9 +42,9 @@ namespace pendarlab::app::mavlink_hub
     };
   } // namespace
 
-  const std::vector<CommandDescriptor>& appServiceCommandDescriptors()
+  const std::vector<AppServiceCommandDescriptor>& appServiceCommandDescriptors()
   {
-    static const std::vector<CommandDescriptor> descriptors(kCommands.begin(), kCommands.end());
+    static const std::vector<AppServiceCommandDescriptor> descriptors(kCommands.begin(), kCommands.end());
     return descriptors;
   }
 

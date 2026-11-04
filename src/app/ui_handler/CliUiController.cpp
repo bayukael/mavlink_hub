@@ -14,7 +14,7 @@ namespace pendarlab::app::mavlink_hub
 
     IAppService& app_service;
 
-    std::vector<CommandDescriptor> command_descriptors;
+    std::vector<AppServiceCommandDescriptor> command_descriptors;
     std::vector<std::string> command_entries;
     int selected_command = 0;
     int committed_command = -1;
@@ -36,7 +36,7 @@ namespace pendarlab::app::mavlink_hub
   CliUiController::CliUiControllerImpl::CliUiControllerImpl(IAppService& appsrv) : app_service(appsrv)
   {
     command_descriptors = app_service.getCommandDescriptors();
-    for (const CommandDescriptor& descriptor : command_descriptors) {
+    for (const AppServiceCommandDescriptor& descriptor : command_descriptors) {
       command_entries.push_back(std::string(descriptor.name));
     }
   }
@@ -57,7 +57,7 @@ namespace pendarlab::app::mavlink_hub
   CliUiController::CliUiController(CliUiController&&) noexcept = default;
   CliUiController& CliUiController::operator=(CliUiController&&) noexcept = default;
 
-  const std::vector<CommandDescriptor>& CliUiController::commandDescriptors() const
+  const std::vector<AppServiceCommandDescriptor>& CliUiController::commandDescriptors() const
   {
     return d->command_descriptors;
   }
