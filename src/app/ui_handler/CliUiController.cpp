@@ -14,7 +14,7 @@ namespace pendarlab::app::mavlink_hub
 
     IAppService& app_service;
 
-    std::vector<AppServiceCommandDescriptor> command_descriptors;
+    std::array<AppServiceCommandDescriptor, kUserExecutableCommandTypes.size()> command_descriptors;
     std::vector<std::string> command_entries;
     int selected_command = 0;
     int committed_command = -1;
@@ -35,7 +35,18 @@ namespace pendarlab::app::mavlink_hub
 
   CliUiController::CliUiControllerImpl::CliUiControllerImpl(IAppService& appsrv) : app_service(appsrv)
   {
-    command_descriptors = app_service.getCommandDescriptors();
+    // Build the fixed-size menu as a derived view of the canonical
+    // appServiceCommandDescriptors() table: one descriptor per user-executable
+    // command, obtained by indexing the table by AppServiceCommandType. Each
+    // entry therefore carries its own type, so the menu-to-command mapping
+    // (cmd_type = command_descriptors[committed].type) needs no separate index
+    // map, and name/requires_payload/payload_hint come from the single source
+    // of truth rather than being re-declared here.
+    const auto& canonical = appServiceCommandDescriptors();
+    for (std::size_t i = 0; i < command_descriptors.size(); ++i) {
+      command_descriptors[i] = canonical[static_cast<std::size_t>(kUserExecutableCommandTypes[i])];
+    }
+    command_entries.reserve(command_descriptors.size());
     for (const AppServiceCommandDescriptor& descriptor : command_descriptors) {
       command_entries.push_back(std::string(descriptor.name));
     }
@@ -57,7 +68,7 @@ namespace pendarlab::app::mavlink_hub
   CliUiController::CliUiController(CliUiController&&) noexcept = default;
   CliUiController& CliUiController::operator=(CliUiController&&) noexcept = default;
 
-  const std::vector<AppServiceCommandDescriptor>& CliUiController::commandDescriptors() const
+  const std::array<AppServiceCommandDescriptor, 8>& CliUiController::commandDescriptors() const
   {
     return d->command_descriptors;
   }

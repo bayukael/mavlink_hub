@@ -4,6 +4,8 @@
 #include "app/app_service/AppServiceCommandDescriptor.h"
 #include "app/types/CommandResult.h"
 
+#include <array>
+#include <cstddef>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -25,6 +27,27 @@ namespace pendarlab::app::mavlink_hub
     std::string report;
   };
 
+  // The user-executable commands offered by the CLI menu, in the menu's display
+  // order. Only these commands are surfaced to the user; the remaining commands
+  // in the canonical appServiceCommandDescriptors() table (plan lifecycle,
+  // endpoint/agent mutation, GET_STATUS, GET_CURRENT_PLAN) are not shown in the
+  // menu but stay fully supported by AppService.
+  //
+  // Each entry names an AppServiceCommandType; CliUiController derives its fixed
+  // command array by indexing the canonical table with these types (relying on
+  // the '= 0' first-enumerator and same-order invariants asserted in
+  // AppServiceCommandDescriptor.cpp).
+  inline constexpr std::array<AppServiceCommandType, 8> kUserExecutableCommandTypes = {
+    AppServiceCommandType::GET_ENDPOINT_LIST,
+    AppServiceCommandType::GET_ENDPOINT_STATUS,
+    AppServiceCommandType::GET_ENDPOINT_STATUS_ALL,
+    AppServiceCommandType::GET_AGENT_LIST,
+    AppServiceCommandType::GET_AGENT_STATUS,
+    AppServiceCommandType::GET_AGENT_STATUS_ALL,
+    AppServiceCommandType::GET_AGENT_REPORT,
+    AppServiceCommandType::GET_AGENT_REPORT_ALL,
+  };
+
   // Holds the state and actions of the CLI UI, independent of any rendering
   // framework. This is the unit-testable core: it loads command descriptors
   // from an IAppService, tracks the selected/committed command and payload,
@@ -42,8 +65,9 @@ namespace pendarlab::app::mavlink_hub
     CliUiController(CliUiController&&) noexcept;
     CliUiController& operator=(CliUiController&&) noexcept;
 
-    /// @return the command descriptors loaded from the service.
-    const std::vector<AppServiceCommandDescriptor>& commandDescriptors() const;
+    /// @return the derived descriptors for the user-executable commands, in the
+    ///         menu's display order (one per kUserExecutableCommandTypes entry).
+    const std::array<AppServiceCommandDescriptor, 8>& commandDescriptors() const;
 
     /// @return display names for every command (one per descriptor).
     const std::vector<std::string>& commandEntries() const;
