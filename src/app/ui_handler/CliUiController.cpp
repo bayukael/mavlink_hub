@@ -14,7 +14,7 @@ namespace pendarlab::app::mavlink_hub
 
     IAppService& app_service;
 
-    std::array<AppServiceCommandDescriptor, kUserExecutableCommandTypes.size()> command_descriptors;
+    std::array<AppServiceCommandDescriptor, 8> command_descriptors;
     std::vector<std::string> command_entries;
     int selected_command = 0;
     int committed_command = -1;
@@ -36,16 +36,26 @@ namespace pendarlab::app::mavlink_hub
   CliUiController::CliUiControllerImpl::CliUiControllerImpl(IAppService& appsrv) : app_service(appsrv)
   {
     // Build the fixed-size menu as a derived view of the canonical
-    // appServiceCommandDescriptors() table: one descriptor per user-executable
-    // command, obtained by indexing the table by AppServiceCommandType. Each
-    // entry therefore carries its own type, so the menu-to-command mapping
-    // (cmd_type = command_descriptors[committed].type) needs no separate index
-    // map, and name/requires_payload/payload_hint come from the single source
-    // of truth rather than being re-declared here.
+    // appServiceCommandDescriptors() table: each user-executable command is
+    // selected by casting its AppServiceCommandType to std::size_t and using it
+    // as the index into the table. Each entry therefore carries its own type,
+    // so the menu-to-command mapping (cmd_type =
+    // command_descriptors[committed].type) needs no separate index map, and
+    // name/requires_payload/payload_hint come from the single source of truth
+    // rather than being re-declared here. Only these eight commands are offered
+    // in the menu; plan lifecycle, endpoint/agent mutation, GET_STATUS, and
+    // GET_CURRENT_PLAN stay supported by AppService but are not shown.
     const auto& canonical = appServiceCommandDescriptors();
-    for (std::size_t i = 0; i < command_descriptors.size(); ++i) {
-      command_descriptors[i] = canonical[static_cast<std::size_t>(kUserExecutableCommandTypes[i])];
-    }
+    command_descriptors = {
+      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_LIST)],
+      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS)],
+      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS_ALL)],
+      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_LIST)],
+      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS)],
+      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS_ALL)],
+      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT)],
+      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL)],
+    };
     command_entries.reserve(command_descriptors.size());
     for (const AppServiceCommandDescriptor& descriptor : command_descriptors) {
       command_entries.push_back(std::string(descriptor.name));

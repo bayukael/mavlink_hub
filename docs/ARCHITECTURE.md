@@ -357,8 +357,8 @@ controller (model) and an ftxui handler (view).
 
 The framework-agnostic model/state of the UI (unit-testable). It derives the user-facing command
 menu as a fixed `std::array<AppServiceCommandDescriptor, 8>` from the canonical
-`appServiceCommandDescriptors()` table (indexed by `AppServiceCommandType`, in the display order
-given by `kUserExecutableCommandTypes`), tracks the selected/committed command and its payload,
+`appServiceCommandDescriptors()` table (each entry selected by indexing the table with its own
+`AppServiceCommandType`), tracks the selected/committed command and its payload,
 executes commands **asynchronously on a worker thread**, and stores the resulting `CommandResult`.
 Only the eight user-executable commands appear in the menu; the rest of the canonical table stays
 supported by `AppService`.
@@ -393,9 +393,9 @@ Data types shared by the application and UI layers (`app/types/`).
   requires_payload; std::string_view payload_hint; }`: describes a command for the UI menu.
 - **`appServiceCommandDescriptors()`** — the canonical `constexpr std::array` table (one entry per
   enumerator, guarded by `static_assert`). It is the single source of truth for command names and
-  payload metadata; `CliUiController` derives its menu (the eight user-executable commands, listed
-  in `kUserExecutableCommandTypes`) from it, so the controller never re-declares descriptor
-  metadata as literals.
+  payload metadata; `CliUiController` derives its menu (the eight user-executable commands,
+  selected from it one by one by `AppServiceCommandType`) from it, so the controller never
+  re-declares descriptor metadata as literals.
 - **`CommandResult`** — `{ bool success; std::vector<std::string> message; std::string
   data; }`: the outcome of a command.
 - **`AppConfig`** — `{ agent_lib_list, transport_lib_list, path_to_extra_lib_list,
