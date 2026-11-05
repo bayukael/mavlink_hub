@@ -3,16 +3,32 @@
 
 #include <atomic>
 #include <chrono>
+#include <cstddef>
 #include <gtest/gtest.h>
+#include <set>
 
 using pendarlab::app::mavlink_hub::CliUiController;
 using pendarlab::app::mavlink_hub::AppServiceCommandDescriptor;
 using pendarlab::app::mavlink_hub::AppServiceCommandType;
+using pendarlab::app::mavlink_hub::appServiceCommandDescriptors;
 using pendarlab::app::mavlink_hub::test::MockAppService;
 
 namespace
 {
   constexpr std::chrono::milliseconds kSlowDelay{ 50 };
+
+  // Maps an AppServiceCommandType to its index in the controller's user-command
+  // menu, or -1 if the command is not shown in the menu.
+  int menuIndexOf(const CliUiController& controller, AppServiceCommandType type)
+  {
+    const auto& descriptors = controller.commandDescriptors();
+    for (std::size_t i = 0; i < descriptors.size(); ++i) {
+      if (descriptors[i].type == type) {
+        return static_cast<int>(i);
+      }
+    }
+    return -1;
+  }
 }
 
 class CliUiControllerTest : public testing::Test
@@ -26,10 +42,73 @@ protected:
 
 TEST_F(CliUiControllerTest, LoadsCommandDescriptorsFromService)
 {
-  ASSERT_GT(controller->commandDescriptors().size(), 0u);
-  ASSERT_EQ(controller->commandDescriptors().size(), controller->commandEntries().size());
-  EXPECT_EQ(controller->commandDescriptors()[0].type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
-  EXPECT_EQ(controller->commandEntries()[0], std::string(controller->commandDescriptors()[0].name));
+  const auto& descriptors = controller->commandDescriptors();
+  ASSERT_EQ(descriptors.size(), 8u);
+  ASSERT_EQ(descriptors.size(), controller->commandEntries().size());
+  EXPECT_EQ(descriptors[0].type, AppServiceCommandType::GET_ENDPOINT_LIST);
+  EXPECT_EQ(controller->commandEntries()[0], std::string(descriptors[0].name));
+}
+
+// The menu is a derived view of the canonical table: exactly the eight
+// user-executable commands, in the intended display order, with unique
+// non-empty names, and no command outside the user set (plan lifecycle,
+// endpoint/agent mutation, GET_STATUS, GET_CURRENT_PLAN) shown.
+TEST_F(CliUiControllerTest, CommandDescriptorsHoldExactlyTheEightUserCommandsInDisplayOrder)
+{
+  const auto& descriptors = controller->commandDescriptors();
+  ASSERT_EQ(descriptors.size(), 8u);
+  ASSERT_EQ(descriptors.size(), controller->commandEntries().size());
+
+  // The intended display order, written out one by one.
+  EXPECT_EQ(descriptors[0].type, AppServiceCommandType::GET_ENDPOINT_LIST);
+  EXPECT_EQ(descriptors[1].type, AppServiceCommandType::GET_ENDPOINT_STATUS);
+  EXPECT_EQ(descriptors[2].type, AppServiceCommandType::GET_ENDPOINT_STATUS_ALL);
+  EXPECT_EQ(descriptors[3].type, AppServiceCommandType::GET_AGENT_LIST);
+  EXPECT_EQ(descriptors[4].type, AppServiceCommandType::GET_AGENT_STATUS);
+  EXPECT_EQ(descriptors[5].type, AppServiceCommandType::GET_AGENT_STATUS_ALL);
+  EXPECT_EQ(descriptors[6].type, AppServiceCommandType::GET_AGENT_REPORT);
+  EXPECT_EQ(descriptors[7].type, AppServiceCommandType::GET_AGENT_REPORT_ALL);
+
+  std::set<std::string> names;
+  for (std::size_t i = 0; i < descriptors.size(); ++i) {
+    // Non-empty, unique names.
+    EXPECT_EQ(false, descriptors[i].name.empty());
+    EXPECT_EQ(true, names.insert(std::string(descriptors[i].name)).second)
+        << "duplicate name: " << descriptors[i].name;
+    // Derived from the canonical table (not re-declared literals): each entry
+    // carries its own type, which indexes the canonical table.
+    const AppServiceCommandDescriptor& canonical =
+        appServiceCommandDescriptors()[static_cast<std::size_t>(descriptors[i].type)];
+    EXPECT_EQ(descriptors[i].name, canonical.name);
+    EXPECT_EQ(descriptors[i].requires_payload, canonical.requires_payload);
+    EXPECT_EQ(descriptors[i].payload_hint, canonical.payload_hint);
+    // The displayed entry name is the descriptor's canonical name.
+    EXPECT_EQ(controller->commandEntries()[i], std::string(descriptors[i].name));
+  }
+  EXPECT_EQ(names.size(), descriptors.size());
+}
+
+// Executing every menu position must dispatch the intended AppServiceCommandType
+// for that entry, verifying the menu-to-command mapping with no separate index map.
+TEST_F(CliUiControllerTest, ExecutingEveryMenuPositionDispatchesItsIntendedCommandType)
+{
+  const auto& descriptors = controller->commandDescriptors();
+  for (std::size_t i = 0; i < descriptors.size(); ++i) {
+    controller->commitCommand(static_cast<int>(i));
+    controller->executeCurrentCommand();
+    controller->joinExecution();
+  }
+
+  ASSERT_EQ(app_service.commands.size(), 8u);
+  // The intended dispatch for each menu position, written out one by one.
+  EXPECT_EQ(app_service.commands[0].cmd_type, AppServiceCommandType::GET_ENDPOINT_LIST);
+  EXPECT_EQ(app_service.commands[1].cmd_type, AppServiceCommandType::GET_ENDPOINT_STATUS);
+  EXPECT_EQ(app_service.commands[2].cmd_type, AppServiceCommandType::GET_ENDPOINT_STATUS_ALL);
+  EXPECT_EQ(app_service.commands[3].cmd_type, AppServiceCommandType::GET_AGENT_LIST);
+  EXPECT_EQ(app_service.commands[4].cmd_type, AppServiceCommandType::GET_AGENT_STATUS);
+  EXPECT_EQ(app_service.commands[5].cmd_type, AppServiceCommandType::GET_AGENT_STATUS_ALL);
+  EXPECT_EQ(app_service.commands[6].cmd_type, AppServiceCommandType::GET_AGENT_REPORT);
+  EXPECT_EQ(app_service.commands[7].cmd_type, AppServiceCommandType::GET_AGENT_REPORT_ALL);
 }
 
 TEST_F(CliUiControllerTest, NoCommandCommittedDispatchesNothing)
@@ -50,15 +129,15 @@ TEST_F(CliUiControllerTest, CommittedCommandWithOutOfRangeIndexDispatchesNothing
 
 TEST_F(CliUiControllerTest, ExecuteDispatchesCommittedCommandTypeAndPayload)
 {
-  controller->commitCommand(0); // LOAD_PLAN_FROM_PATH
-  controller->setPayload("{\"path\": \"/tmp/plan.json\"}");
+  controller->commitCommand(menuIndexOf(*controller, AppServiceCommandType::GET_ENDPOINT_STATUS)); // requires payload
+  controller->setPayload("{\"name\": \"ep1\"}");
 
   controller->executeCurrentCommand();
   controller->joinExecution();
 
   ASSERT_EQ(app_service.commands.size(), 1u);
-  EXPECT_EQ(app_service.commands[0].cmd_type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
-  EXPECT_EQ(app_service.commands[0].payload, "{\"path\": \"/tmp/plan.json\"}");
+  EXPECT_EQ(app_service.commands[0].cmd_type, AppServiceCommandType::GET_ENDPOINT_STATUS);
+  EXPECT_EQ(app_service.commands[0].payload, "{\"name\": \"ep1\"}");
 }
 
 TEST_F(CliUiControllerTest, StoresResultAfterExecution)
@@ -74,14 +153,14 @@ TEST_F(CliUiControllerTest, StoresResultAfterExecution)
 
 TEST_F(CliUiControllerTest, OnUpdateInvokedWhenCommandCompletes)
 {
-  app_service.slow_command = AppServiceCommandType::APPLY_CURRENT_PLAN;
+  app_service.slow_command = AppServiceCommandType::GET_ENDPOINT_LIST;
   app_service.slow_delay = kSlowDelay;
 
   std::atomic<int> update_count{ 0 };
   controller->setOnUpdate([&] { update_count.fetch_add(1); });
 
-  const int apply_index = static_cast<int>(AppServiceCommandType::APPLY_CURRENT_PLAN);
-  controller->commitCommand(apply_index);
+  const int cmd_index = menuIndexOf(*controller, AppServiceCommandType::GET_ENDPOINT_LIST);
+  controller->commitCommand(cmd_index);
   controller->executeCurrentCommand();
   controller->joinExecution();
 
@@ -91,11 +170,11 @@ TEST_F(CliUiControllerTest, OnUpdateInvokedWhenCommandCompletes)
 
 TEST_F(CliUiControllerTest, MarksExecutingWhileInFlightAndClearsAfter)
 {
-  app_service.slow_command = AppServiceCommandType::APPLY_CURRENT_PLAN;
+  app_service.slow_command = AppServiceCommandType::GET_ENDPOINT_LIST;
   app_service.slow_delay = kSlowDelay;
 
-  const int apply_index = static_cast<int>(AppServiceCommandType::APPLY_CURRENT_PLAN);
-  controller->commitCommand(apply_index);
+  const int cmd_index = menuIndexOf(*controller, AppServiceCommandType::GET_ENDPOINT_LIST);
+  controller->commitCommand(cmd_index);
 
   std::atomic<bool> observed_executing{ false };
   controller->executeCurrentCommand();
@@ -108,11 +187,11 @@ TEST_F(CliUiControllerTest, MarksExecutingWhileInFlightAndClearsAfter)
 
 TEST_F(CliUiControllerTest, IgnoresSecondExecuteWhileInFlight)
 {
-  app_service.slow_command = AppServiceCommandType::APPLY_CURRENT_PLAN;
+  app_service.slow_command = AppServiceCommandType::GET_ENDPOINT_LIST;
   app_service.slow_delay = kSlowDelay;
 
-  const int apply_index = static_cast<int>(AppServiceCommandType::APPLY_CURRENT_PLAN);
-  controller->commitCommand(apply_index);
+  const int cmd_index = menuIndexOf(*controller, AppServiceCommandType::GET_ENDPOINT_LIST);
+  controller->commitCommand(cmd_index);
 
   controller->executeCurrentCommand();
   controller->executeCurrentCommand();
@@ -123,12 +202,12 @@ TEST_F(CliUiControllerTest, IgnoresSecondExecuteWhileInFlight)
 
 TEST_F(CliUiControllerTest, ExecutedCommandNameReflectsCommittedCommand)
 {
-  const int apply_index = static_cast<int>(AppServiceCommandType::APPLY_CURRENT_PLAN);
-  controller->commitCommand(apply_index);
+  const int list_index = menuIndexOf(*controller, AppServiceCommandType::GET_ENDPOINT_LIST);
+  controller->commitCommand(list_index);
   controller->executeCurrentCommand();
   controller->joinExecution();
 
-  EXPECT_EQ(controller->executedCommand(), "apply_current_plan");
+  EXPECT_EQ(controller->executedCommand(), "get_endpoint_list");
 }
 
 TEST_F(CliUiControllerTest, ClearPayloadEmptiesPayload)
@@ -266,8 +345,8 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterAppServiceCommand
   // The startup fetch must not touch the user-command execution path: the
   // committed command, executing flag, and result stay as the user left them,
   // and a later user execution still behaves normally.
-  controller->commitCommand(0); // LOAD_PLAN_FROM_PATH
-  controller->setPayload("{\"path\": \"/tmp/plan.json\"}");
+  controller->commitCommand(menuIndexOf(*controller, AppServiceCommandType::GET_ENDPOINT_STATUS));
+  controller->setPayload("{\"name\": \"ep1\"}");
 
   // Simulate the user-command path being used before/independently of the
   // startup fetch (e.g. an async command already completed).
@@ -280,7 +359,7 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterAppServiceCommand
   controller->updateOverviewData();
   ASSERT_EQ(app_service.commands.size(), 3u);
 
-  EXPECT_EQ(controller->committedCommand(), 0);
+  EXPECT_EQ(controller->committedCommand(), menuIndexOf(*controller, AppServiceCommandType::GET_ENDPOINT_STATUS));
   EXPECT_EQ(controller->executing(), false);
   ASSERT_EQ(controller->commandResult().has_value(), true);
   EXPECT_EQ(controller->commandResult()->success, true);
@@ -289,8 +368,8 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterAppServiceCommand
   controller->executeCurrentCommand();
   controller->joinExecution();
   ASSERT_EQ(app_service.commands.size(), 4u);
-  EXPECT_EQ(app_service.commands[3].cmd_type, AppServiceCommandType::LOAD_PLAN_FROM_PATH);
-  EXPECT_EQ(app_service.commands[3].payload, "{\"path\": \"/tmp/plan.json\"}");
+  EXPECT_EQ(app_service.commands[3].cmd_type, AppServiceCommandType::GET_ENDPOINT_STATUS);
+  EXPECT_EQ(app_service.commands[3].payload, "{\"name\": \"ep1\"}");
 }
 
 int main(int argc, char** argv)

@@ -4,6 +4,7 @@
 #include "app/app_service/AppServiceCommandDescriptor.h"
 #include "app/types/CommandResult.h"
 
+#include <array>
 #include <functional>
 #include <memory>
 #include <optional>
@@ -42,8 +43,10 @@ namespace pendarlab::app::mavlink_hub
     CliUiController(CliUiController&&) noexcept;
     CliUiController& operator=(CliUiController&&) noexcept;
 
-    /// @return the command descriptors loaded from the service.
-    const std::vector<AppServiceCommandDescriptor>& commandDescriptors() const;
+    /// @return the descriptors for the eight user-executable commands, in menu
+    ///         display order, each derived from appServiceCommandDescriptors()
+    ///         by indexing with its own AppServiceCommandType.
+    const std::array<AppServiceCommandDescriptor, 8>& commandDescriptors() const;
 
     /// @return display names for every command (one per descriptor).
     const std::vector<std::string>& commandEntries() const;
