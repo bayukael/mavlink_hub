@@ -14,8 +14,7 @@ namespace pendarlab::app::mavlink_hub
 
     IAppService& app_service;
 
-    std::array<AppServiceCommandDescriptor, 8> command_descriptors;
-    std::vector<std::string> command_entries;
+    std::vector<CliCommandDescriptor> command_descriptors;
     int selected_command = 0;
     int committed_command = -1;
 
@@ -38,28 +37,24 @@ namespace pendarlab::app::mavlink_hub
     // Build the fixed-size menu as a derived view of the canonical
     // appServiceCommandDescriptors() table: each user-executable command is
     // selected by casting its AppServiceCommandType to std::size_t and using it
-    // as the index into the table. Each entry therefore carries its own type,
-    // so the menu-to-command mapping (cmd_type =
-    // command_descriptors[committed].type) needs no separate index map, and
-    // name/requires_payload/payload_hint come from the single source of truth
-    // rather than being re-declared here. Only these eight commands are offered
+    // as the index into the table, and wrapped in a CliCommandDescriptor. This
+    // is the controller's single command vector: each entry carries its own
+    // type, display name, and payload metadata, so the menu-to-command mapping
+    // (cmd_type = command_descriptors[committed].type) needs no separate index
+    // map and no parallel names vector. Only these eight commands are offered
     // in the menu; plan lifecycle, endpoint/agent mutation, GET_STATUS, and
     // GET_CURRENT_PLAN stay supported by AppService but are not shown.
     const auto& canonical = appServiceCommandDescriptors();
     command_descriptors = {
-      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_LIST)],
-      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS)],
-      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS_ALL)],
-      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_LIST)],
-      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS)],
-      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS_ALL)],
-      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT)],
-      canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL)],
+      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_LIST)]),
+      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS)]),
+      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS_ALL)]),
+      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_LIST)]),
+      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS)]),
+      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS_ALL)]),
+      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT)]),
+      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL)]),
     };
-    command_entries.reserve(command_descriptors.size());
-    for (const AppServiceCommandDescriptor& descriptor : command_descriptors) {
-      command_entries.push_back(std::string(descriptor.name));
-    }
   }
 
   bool CliUiController::CliUiControllerImpl::validCommittedCommand() const
@@ -78,17 +73,9 @@ namespace pendarlab::app::mavlink_hub
   CliUiController::CliUiController(CliUiController&&) noexcept = default;
   CliUiController& CliUiController::operator=(CliUiController&&) noexcept = default;
 
-  const std::array<AppServiceCommandDescriptor, 8>& CliUiController::commandDescriptors() const
+  const std::vector<CliCommandDescriptor>& CliUiController::commandDescriptors() const
   {
     return d->command_descriptors;
-  }
-  const std::vector<std::string>& CliUiController::commandEntries() const
-  {
-    return d->command_entries;
-  }
-  std::vector<std::string>& CliUiController::commandEntries()
-  {
-    return d->command_entries;
   }
 
   int CliUiController::selectedCommand() const
@@ -227,7 +214,7 @@ namespace pendarlab::app::mavlink_hub
         return;
       }
       d->executing = true;
-      d->executed_command = std::string(d->command_descriptors[static_cast<std::size_t>(d->committed_command)].name);
+      d->executed_command = d->command_descriptors[static_cast<std::size_t>(d->committed_command)].name;
     }
 
     // Responds to the [Execute Command] button: this is the single command

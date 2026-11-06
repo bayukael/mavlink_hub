@@ -163,6 +163,7 @@ set_target_properties(MavlinkHubStartupAppConfigurator PROPERTIES OUTPUT_NAME pe
 ##########################     CliUiController     ###########################
 ##############################################################################
 add_library(MavlinkHubCliUiController SHARED
+  src/app/ui_handler/CliCommandDescriptor.cpp
   src/app/ui_handler/CliUiController.cpp
 )
 target_include_directories(MavlinkHubCliUiController PUBLIC 
@@ -242,6 +243,20 @@ target_link_libraries(MavlinkHubCliUiControllerTest
   PRIVATE gtest
   PRIVATE MavlinkHubCliUiController
   PRIVATE MavlinkHubMockAppService
+)
+
+##############################################################################
+#####################     CliCommandDescriptor Test     ######################
+##############################################################################
+add_executable(MavlinkHubCliCommandDescriptorTest
+  test/app/ui_handler/cli_command_descriptor_test.cpp
+  src/app/ui_handler/CliCommandDescriptor.cpp
+)
+target_include_directories(MavlinkHubCliCommandDescriptorTest PUBLIC 
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
+)
+target_link_libraries(MavlinkHubCliCommandDescriptorTest
+  PRIVATE gtest
 )
 
 ##############################################################################
