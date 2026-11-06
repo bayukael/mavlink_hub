@@ -48,6 +48,7 @@ namespace pendarlab::app::mavlink_hub
     std::string_view name;         ///< Canonical command name as typed in the UI.
     bool requires_payload;         ///< Whether the command needs a payload to execute.
     std::string_view payload_hint; ///< Human-readable hint for the expected payload format.
+    std::string_view description;  ///< Human-readable description of the command, at most 150 characters.
   };
 
   // Canonical descriptor table for all commands, indexed by AppServiceCommandType
