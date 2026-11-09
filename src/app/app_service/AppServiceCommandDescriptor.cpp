@@ -7,8 +7,7 @@ namespace pendarlab::app::mavlink_hub
 {
   namespace
   {
-    constexpr std::size_t kCommandCount = 25;
-    static_assert(kCommandCount == static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL) + 1,
+    static_assert(kAppServiceCommandCount == static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL) + 1,
                   "AppServiceCommandDescriptor table must have one entry per AppServiceCommandType enumerator");
 
     // The descriptor table is indexed by static_cast<std::size_t>(AppServiceCommandType),
@@ -22,7 +21,7 @@ namespace pendarlab::app::mavlink_hub
     // table together, inserting the new command in the same position in both, and
     // keeping the first enumerator (LOAD_PLAN_FROM_PATH) at value 0, so the enum
     // and table stay aligned as the command set grows.
-    constexpr std::array<AppServiceCommandDescriptor, kCommandCount> kCommands = {
+    constexpr std::array<AppServiceCommandDescriptor, kAppServiceCommandCount> kCommands = {
       {
        { AppServiceCommandType::LOAD_PLAN_FROM_PATH, "load_plan_from_path", true, "path to .json plan" },
        { AppServiceCommandType::LOAD_PLAN_FROM_JSON_TEXT, "load_plan_from_json_text", true, "plan JSON text" },
@@ -53,10 +52,9 @@ namespace pendarlab::app::mavlink_hub
     };
   } // namespace
 
-  const std::vector<AppServiceCommandDescriptor>& appServiceCommandDescriptors()
+  const std::array<AppServiceCommandDescriptor, kAppServiceCommandCount>& appServiceCommandDescriptors()
   {
-    static const std::vector<AppServiceCommandDescriptor> descriptors(kCommands.begin(), kCommands.end());
-    return descriptors;
+    return kCommands;
   }
 
 } // namespace pendarlab::app::mavlink_hub

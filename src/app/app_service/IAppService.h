@@ -27,6 +27,9 @@ namespace pendarlab::app::mavlink_hub
     virtual CommandResult executeCommand(const AppServiceCommand& cmd) = 0;
 
     /// @return the canonical descriptor table for all supported commands.
-    virtual std::vector<AppServiceCommandDescriptor> getCommandDescriptors() const { return appServiceCommandDescriptors(); }
+    virtual std::vector<AppServiceCommandDescriptor> getCommandDescriptors() const {
+      const auto& descriptors = appServiceCommandDescriptors();
+      return std::vector<AppServiceCommandDescriptor>(descriptors.begin(), descriptors.end());
+    }
   };
 } // namespace pendarlab::app::mavlink_hub

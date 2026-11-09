@@ -14,7 +14,7 @@ namespace pendarlab::app::mavlink_hub
 
     IAppService& app_service;
 
-    std::vector<CliCommandDescriptor> command_descriptors;
+    std::array<CliCommandDescriptor, 8> command_descriptors;
     int selected_command = 0;
     int committed_command = -1;
 
@@ -32,29 +32,32 @@ namespace pendarlab::app::mavlink_hub
     bool validCommittedCommand() const;
   };
 
-  CliUiController::CliUiControllerImpl::CliUiControllerImpl(IAppService& appsrv) : app_service(appsrv)
+  CliUiController::CliUiControllerImpl::CliUiControllerImpl(IAppService& appsrv)
+      : app_service(appsrv),
+        // Build the fixed-size menu as a derived view of the canonical
+        // appServiceCommandDescriptors() table: each user-executable command is
+        // selected by casting its AppServiceCommandType to std::size_t and used
+        // as the index into the table, then wrapped in a CliCommandDescriptor.
+        // This is the controller's single self-describing command container
+        // (std::array, fixed size known up front): each entry carries its own
+        // type, display name, and payload metadata, so the menu-to-command
+        // mapping (cmd_type = command_descriptors[committed].type) needs no
+        // separate index map and no parallel names container. The initializer
+        // list runs before the body so no default constructor for
+        // CliCommandDescriptor is needed. Only these eight commands are offered
+        // in the menu; plan lifecycle, endpoint/agent mutation, GET_STATUS, and
+        // GET_CURRENT_PLAN stay supported by AppService but are not shown.
+        command_descriptors{
+          CliCommandDescriptor(appServiceCommandDescriptors()[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_LIST)]),
+          CliCommandDescriptor(appServiceCommandDescriptors()[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS)]),
+          CliCommandDescriptor(appServiceCommandDescriptors()[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS_ALL)]),
+          CliCommandDescriptor(appServiceCommandDescriptors()[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_LIST)]),
+          CliCommandDescriptor(appServiceCommandDescriptors()[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS)]),
+          CliCommandDescriptor(appServiceCommandDescriptors()[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS_ALL)]),
+          CliCommandDescriptor(appServiceCommandDescriptors()[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT)]),
+          CliCommandDescriptor(appServiceCommandDescriptors()[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL)]),
+        }
   {
-    // Build the fixed-size menu as a derived view of the canonical
-    // appServiceCommandDescriptors() table: each user-executable command is
-    // selected by casting its AppServiceCommandType to std::size_t and using it
-    // as the index into the table, and wrapped in a CliCommandDescriptor. This
-    // is the controller's single command vector: each entry carries its own
-    // type, display name, and payload metadata, so the menu-to-command mapping
-    // (cmd_type = command_descriptors[committed].type) needs no separate index
-    // map and no parallel names vector. Only these eight commands are offered
-    // in the menu; plan lifecycle, endpoint/agent mutation, GET_STATUS, and
-    // GET_CURRENT_PLAN stay supported by AppService but are not shown.
-    const auto& canonical = appServiceCommandDescriptors();
-    command_descriptors = {
-      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_LIST)]),
-      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS)]),
-      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_ENDPOINT_STATUS_ALL)]),
-      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_LIST)]),
-      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS)]),
-      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_STATUS_ALL)]),
-      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT)]),
-      CliCommandDescriptor(canonical[static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL)]),
-    };
   }
 
   bool CliUiController::CliUiControllerImpl::validCommittedCommand() const
@@ -73,7 +76,7 @@ namespace pendarlab::app::mavlink_hub
   CliUiController::CliUiController(CliUiController&&) noexcept = default;
   CliUiController& CliUiController::operator=(CliUiController&&) noexcept = default;
 
-  const std::vector<CliCommandDescriptor>& CliUiController::commandDescriptors() const
+  const std::array<CliCommandDescriptor, 8>& CliUiController::commandDescriptors() const
   {
     return d->command_descriptors;
   }

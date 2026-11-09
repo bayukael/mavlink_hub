@@ -1,7 +1,8 @@
 #pragma once
 
+#include <array>
+#include <cstddef>
 #include <string_view>
-#include <vector>
 
 namespace pendarlab::app::mavlink_hub
 {
@@ -42,6 +43,12 @@ namespace pendarlab::app::mavlink_hub
     GET_AGENT_REPORT_ALL,
   };
 
+  /// Number of user commands, i.e. the size of the canonical descriptor table.
+  /// Kept in sync with `AppServiceCommandType` (the table has one entry per
+  /// enumerator, in enum order); adding a command grows this automatically.
+  inline constexpr std::size_t kAppServiceCommandCount =
+      static_cast<std::size_t>(AppServiceCommandType::GET_AGENT_REPORT_ALL) + 1;
+
   /// Static metadata for one user command, surfaced to the CLI UI.
   struct AppServiceCommandDescriptor {
     AppServiceCommandType type;          ///< The command this descriptor describes.
@@ -57,6 +64,6 @@ namespace pendarlab::app::mavlink_hub
   // Keep this table aligned with AppServiceCommandType (AppServiceCommandDescriptor.h):
   // adding a command requires editing the enum and this table together, in the
   // same order, keeping the first enumerator (LOAD_PLAN_FROM_PATH) at value 0.
-  const std::vector<AppServiceCommandDescriptor>& appServiceCommandDescriptors();
+  const std::array<AppServiceCommandDescriptor, kAppServiceCommandCount>& appServiceCommandDescriptors();
 
 } // namespace pendarlab::app::mavlink_hub

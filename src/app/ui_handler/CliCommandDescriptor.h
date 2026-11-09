@@ -12,9 +12,9 @@ namespace pendarlab::app::mavlink_hub
   /// `requires_payload`, `payload_hint`) but stores the name as an owned
   /// `std::string` (the app-service descriptor exposes a `std::string_view`
   /// into its canonical table) and adds a `description` string. Unlike the
-  /// parallel `command_descriptors`/`command_entries` vectors that
-  /// `CliUiController` used to keep index-aligned, a single vector of this
-  /// struct makes each menu entry self-describing: the dispatch type, the
+  /// parallel `command_descriptors`/`command_entries` containers that
+  /// `CliUiController` used to keep index-aligned, a single `std::array` of
+  /// this struct makes each menu entry self-describing: the dispatch type, the
   /// rendered name, the payload metadata, and (when later populated) a
   /// human-readable description all travel together in one entry.
   ///

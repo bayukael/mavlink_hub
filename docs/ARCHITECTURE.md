@@ -356,17 +356,17 @@ controller (model) and an ftxui handler (view).
 #### 3.3.1 CliUiController
 
 The framework-agnostic model/state of the UI (unit-testable). It derives the user-facing command
-menu as a single `std::vector<CliCommandDescriptor>` from the canonical
+menu as a single `std::array<CliCommandDescriptor, 8>` from the canonical
 `appServiceCommandDescriptors()` table (each entry selected by indexing the table with its own
 `AppServiceCommandType` and wrapped in a UI-owned `CliCommandDescriptor`), tracks the
 selected/committed command and its payload,
 executes commands **asynchronously on a worker thread**, and stores the resulting `CommandResult`.
 Each `CliCommandDescriptor` carries its own dispatch `type`, display `name`, and payload metadata,
-so the menu needs no separate index map and no parallel names vector. The controller holds exactly
-one self-describing command vector. Only the eight user-executable commands appear in the menu; the
+so the menu needs no separate index map and no parallel names container. The controller holds exactly
+one self-describing command container. Only the eight user-executable commands appear in the menu; the
 rest of the canonical table stays supported by `AppService`.
 
-- `commandDescriptors` — the single `std::vector<CliCommandDescriptor>` (one per menu entry).
+- `commandDescriptors` — the single `std::array<CliCommandDescriptor, 8>` (one per menu entry).
   `selectedCommand`, `commitCommand`, `payload`, `setPayload`, `clearPayload` — model state for the
   command menu and payload.
 - `executeCurrentCommand`, `commandResult`, `executing`, `joinExecution` — async execution on a
@@ -379,8 +379,8 @@ rest of the canonical table stays supported by `AppService`.
 The **ftxui** view. It builds the component tree (command menu, payload input, action buttons,
 status bar, result pane), owns the UI thread, and drives the ftxui event loop. The FTXUI `Menu`
 widget needs a stable `std::vector<std::string>`, so the handler projects the command display names
-from the controller's single `CliCommandDescriptor` vector into its own `command_entries` member;
-the controller model itself holds only the one command vector.
+from the controller's single `CliCommandDescriptor` array into its own `command_entries` member;
+the controller model itself holds only the one command container.
 
 - `start`, `stop` — manage the UI thread.
 - `getResult` — currently a stub.
@@ -398,15 +398,16 @@ Data types shared by the application and UI layers (`app/types/`).
   agent management).
 - **`AppServiceCommandDescriptor`** — `{ AppServiceCommandType type; std::string_view name; bool
   requires_payload; std::string_view payload_hint; }`: describes a command for the UI menu.
-- **`appServiceCommandDescriptors()`** — the canonical `constexpr std::array` table (one entry per
-  enumerator, guarded by `static_assert`). It is the single source of truth for command names and
-  payload metadata; `CliUiController` derives its menu (the eight user-executable commands,
-  selected from it one by one by `AppServiceCommandType`) from it, so the controller never
-  re-declares descriptor metadata as literals.
+- **`appServiceCommandDescriptors()`** — returns the canonical
+  `const std::array<AppServiceCommandDescriptor, kAppServiceCommandCount>&` table (one entry per
+  enumerator, guarded by `static_assert`), exposing `kCommands` directly. It is the single source of
+  truth for command names and payload metadata; `CliUiController` derives its menu (the eight
+  user-executable commands, selected from it one by one by `AppServiceCommandType`) from it, so the
+  controller never re-declares descriptor metadata as literals.
 - **`CliCommandDescriptor`** — `{ AppServiceCommandType type; std::string name; bool
   requires_payload; std::string payload_hint; std::string description; }`: a UI-owned,
   self-describing command entry mirroring `AppServiceCommandDescriptor` (with an owned `name`
-  string and a `description` that is currently empty). A single vector of these is the
+  string and a `description` that is currently empty). A single `std::array` of these is the
   controller's one command representation; `CliUiHandler` renders each `name` in the menu and
   dispatches by `type`.
 - **`CommandResult`** — `{ bool success; std::vector<std::string> message; std::string
