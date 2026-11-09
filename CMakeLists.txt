@@ -172,6 +172,7 @@ target_include_directories(MavlinkHubCliUiController PUBLIC
 )
 target_link_libraries(MavlinkHubCliUiController
     PUBLIC pendarlab::MavlinkHubSdk
+    PUBLIC MavlinkHubAppService
     PUBLIC MavlinkHubJsonUtils
     PUBLIC Threads::Threads
 )
@@ -351,7 +352,6 @@ target_include_directories(MavlinkHubAppService PUBLIC
 target_link_libraries(MavlinkHubAppService
   PUBLIC MavlinkHubShutdownController
   PUBLIC MavlinkHubStartupArgsParser
-  PUBLIC MavlinkHubCliUiHandler
   PUBLIC MavlinkHubLibLoader
   PUBLIC MavlinkHubJsonUtils
   PUBLIC pendarlab::MavlinkHubSdk

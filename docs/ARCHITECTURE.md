@@ -272,7 +272,6 @@ appropriate Manager operation (or plugin loader), and returns a `CommandResult`.
 currently loaded `UserPlan`.
 
 - `executeCommand` — dispatch a single user command (a large switch over the command type).
-- `getCommandDescriptors` — report the commands the UI can present.
 
 #### 3.2.3 Startup
 
