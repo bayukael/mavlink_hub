@@ -372,6 +372,26 @@ rest of the canonical table stays supported by `AppService`.
   worker thread.
 - `setOnUpdate` — register a callback triggered when the state changes (used to redraw).
 - `clearResult` — clear the stored result.
+- `updateOverviewData` — programmatically fetches the agents'/endpoints' lists, statuses, and each
+  agent's report (via `IAppService::executeCommand` for `GET_AGENT_STATUS_ALL`,
+  `GET_AGENT_REPORT_ALL`, and `GET_ENDPOINT_STATUS_ALL`) and repopulates `agentRows()`/`endpointRows()`.
+  It does **not** go through the committed-command execution path and leaves the user-command state
+  untouched. It is the single report-surfacing path reused by both the startup population and the
+  live periodic refresh.
+- `agentRows`, `endpointRows` — return a **snapshot copy** of the overview rows taken under an
+  internal mutex, so the view can read them race-free even while the periodic refresh worker is
+  repopulating them.
+- `reportRefreshPeriod`, `reportRefreshPeriodAtMin`, `reportRefreshPeriodAtMax`,
+  `increaseReportRefreshPeriod`, `decreaseReportRefreshPeriod` — the live report-refresh period
+  (milliseconds, default 1000), adjustable in 100 ms steps within [100, 5000] ms via the '-'/'+'
+  buttons; at a bound the corresponding step is a no-op and the bound flag is set.
+- `startPeriodicRefresh`, `stopPeriodicRefresh` — lifecycle of the periodic report-refresh worker
+  thread. The worker waits the current period, calls `updateOverviewData()` (the same report-surfacing
+  path as the on-demand/startup population), then invokes `on_update` so the view redraws. Changing the
+  period while running wakes the worker so it adopts the new cadence promptly; `stopPeriodicRefresh`
+  (also called by the destructor) stops and joins it cleanly. Because all overview-row writes go
+  through the row mutex and the worker keeps command I/O off the UI thread, periodic and on-demand
+  refreshes do not conflict and the UI never stalls.
 
 #### 3.3.2 CliUiHandler
 
@@ -381,12 +401,21 @@ widget needs a stable `std::vector<std::string>`, so the handler projects the co
 from the controller's single `CliCommandDescriptor` array into its own `command_entries` member;
 the controller model itself holds only the one command container.
 
-- `start`, `stop` — manage the UI thread.
+- `start`, `stop` — manage the UI thread. `start` also kicks off the controller's periodic
+  report-refresh worker; `stop` tears it down first so it stops re-querying after the view is gone.
 - `getResult` — currently a stub.
+
+**Layout rows:** title bar; the command/login row (command pane + command result pane); the **Report
+Refresh Period** control row (`Report Refresh Period: - <value> ms +`); the **overview** row (Agent
+List + Endpoint List tables); the application status bar.
 
 **User command flow:** menu selection → `commitCommand` → payload input → "Execute Command" →
 `executeCurrentCommand()` builds a `AppServiceCommand{type, payload}` → worker thread calls
 `app_service.executeCommand(cmd)` → result stored + `onUpdate()` triggers a redraw.
+
+**Live report refresh flow:** the controller's periodic worker re-queries agents at the selected period
+(via `updateOverviewData()`), then `onUpdate()` posts a redraw to the ftxui loop; the '-' / '+' buttons
+adjust the period in the controller (dimmed/no-op at the bounds).
 
 ### 3.4 Types Component
 
@@ -421,8 +450,10 @@ Small shared utilities used across the hub (`common/`).
 
 - **`JsonUtils`** (`common/json_utils/`) — the central JSON bridge (via `jsoncons`). Free
   functions convert between JSON and domain types: `fstreamToAppConfig`, `fstreamToUserPlan`,
-  `stringToUserPlan`, `fstreamToLibList`, plus JSON-string encoders for execution results and
-  agent/endpoint states. Honors `DISCARD` vs `BEST_EFFORT` policies when parsing lists.
+  `stringToUserPlan`, `fstreamToLibList`, plus JSON-string encoders/decoders for execution results,
+  agent/endpoint states, and agent reports (e.g. `agentReportListToJsonString`/
+  `agentReportListFromJsonString` for the `agent_report_list` shape the periodic refresh consumes).
+  Honors `DISCARD` vs `BEST_EFFORT` policies when parsing lists.
 - **`OperationResult`** (`common/types/`) — the universal result type
   `{ bool success = true; std::vector<std::string> messages; }` with `merge()` (ANDs success,
   concatenates messages). The building block of `ExecutionResultList`.

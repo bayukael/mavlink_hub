@@ -470,6 +470,31 @@ namespace pendarlab::app::mavlink_hub::json_utils
     return result;
   }
 
+  std::optional<std::vector<std::pair<std::string, std::string>>> agentReportListFromJsonString(const std::string& json_str)
+  {
+    json j;
+    try {
+      j = json::parse(json_str);
+    } catch (...) {
+      return std::nullopt;
+    }
+    if (!j.is_object() || !j.contains("agent_report_list") || !j["agent_report_list"].is_array()) {
+      return std::nullopt;
+    }
+
+    std::vector<std::pair<std::string, std::string>> result;
+    for (const auto& entry : j["agent_report_list"].array_range()) {
+      // The list encoder serializes each {name, report} entry with the report
+      // string transported as-is (no format imposed or transformed).
+      if (!entry.is_object() || !entry.contains("name") || !entry["name"].is_string() ||
+          !entry.contains("report") || !entry["report"].is_string()) {
+        return std::nullopt;
+      }
+      result.emplace_back(entry["name"].as_string(), entry["report"].as_string());
+    }
+    return result;
+  }
+
   std::optional<std::vector<std::pair<std::string, std::string>>> endpointStatusListFromJsonString(const std::string& json_str)
   {
     json j;

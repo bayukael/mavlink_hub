@@ -13,6 +13,15 @@
 
 namespace pendarlab::app::mavlink_hub
 {
+  /// Bounds and step for the live report refresh period (milliseconds), driven by
+  /// the '-' / '+' buttons in the CLI. The default (and startup) period is
+  /// kDefaultReportRefreshPeriodMs; each button press steps by 100 ms and clamps
+  /// to [kMinReportRefreshPeriodMs, kMaxReportRefreshPeriodMs].
+  inline constexpr int kDefaultReportRefreshPeriodMs = 1000;
+  inline constexpr int kMinReportRefreshPeriodMs = 100;
+  inline constexpr int kMaxReportRefreshPeriodMs = 5000;
+  inline constexpr int kReportRefreshPeriodStepMs = 100;
+
   /// One row in an overview table (endpoint list or agent list). The fields map
   /// to the columns rendered by the CLI view: name, type, and status for both;
   /// report is only meaningful for agents (endpoints have no report and leave it
@@ -92,28 +101,63 @@ namespace pendarlab::app::mavlink_hub
     /// Clear the stored command result.
     void clearResult();
 
-    /// @return the rows to render in the Agent List overview table. Populated by
-    ///         the data/discovery wiring; the view consumes this as-is.
-    const std::vector<OverviewRow>& agentRows() const;
+    /// @return a snapshot copy of the rows to render in the Agent List overview
+    ///         table, taken under the overview mutex so reads are race-free even
+    ///         while a periodic refresh worker is repopulating them. The view
+    ///         consumes this as-is.
+    std::vector<OverviewRow> agentRows() const;
 
-    /// @return the rows to render in the Endpoint List overview table. Populated
-    ///         by the data/discovery wiring; the view consumes this as-is.
-    const std::vector<OverviewRow>& endpointRows() const;
+    /// @return a snapshot copy of the rows to render in the Endpoint List
+    ///         overview table, taken under the overview mutex so reads are
+    ///         race-free even while a periodic refresh worker is repopulating
+    ///         them. The view consumes this as-is.
+    std::vector<OverviewRow> endpointRows() const;
 
     // Registers a callback invoked (from the worker thread) whenever the
     // observable state changes asynchronously, e.g. when a command finishes
-    // executing. The view uses this to request a UI redraw.
+    // executing or a periodic report refresh completes. The view uses this to
+    // request a UI redraw.
     void setOnUpdate(std::function<void()> callback);
 
     // Refreshes the overview agent/endpoint rows from the app service's current
-    // GET_AGENT_STATUS_ALL / GET_ENDPOINT_STATUS_ALL results, so the overview
-    // reflects hub state that already exists (e.g. a plan applied on startup).
-    // This is a programmatic fetch: it calls executeCommand directly and does NOT
-    // go through the committed command / [Execute Command] execution path (no
-    // command queue is involved), and it leaves the user-command execution state
-    // untouched. Not tied to startup: a periodic refresh can call it again to
-    // re-fetch the same data.
+    // GET_AGENT_STATUS_ALL / GET_AGENT_REPORT_ALL / GET_ENDPOINT_STATUS_ALL
+    // results, so the overview reflects hub state that already exists (e.g. a
+    // plan applied on startup) and each agent's report. This is a programmatic
+    // fetch: it calls executeCommand directly and does NOT go through the
+    // committed command / [Execute Command] execution path (no command queue is
+    // involved), and it leaves the user-command execution state untouched. Not
+    // tied to startup: the periodic refresh (startPeriodicRefresh) and the
+    // startup population both drive this same method.
     void updateOverviewData();
+
+    /// @return the current report refresh period in milliseconds (default 1000).
+    int reportRefreshPeriod() const;
+
+    /// @return true when the report refresh period is at its minimum bound
+    ///         (100 ms), in which case the '-' button is disabled.
+    bool reportRefreshPeriodAtMin() const;
+
+    /// @return true when the report refresh period is at its maximum bound
+    ///         (5000 ms), in which case the '+' button is disabled.
+    bool reportRefreshPeriodAtMax() const;
+
+    /// Increase the report refresh period by 100 ms (no change at the maximum).
+    void increaseReportRefreshPeriod();
+
+    /// Decrease the report refresh period by 100 ms (no change at the minimum).
+    void decreaseReportRefreshPeriod();
+
+    // Starts the periodic report refresh worker thread. The thread periodically
+    // calls updateOverviewData() (re-querying agent reports and refreshing the
+    // display rows) every reportRefreshPeriod() milliseconds, then invokes the
+    // registered on_update callback so the view redraws. Adjusting the period
+    // while running takes effect on the next cycle. No-op if already running.
+    void startPeriodicRefresh();
+
+    // Stops the periodic report refresh worker thread and waits for it to
+    // finish. No-op if it is not running. Safe to call even when nothing is
+    // running.
+    void stopPeriodicRefresh();
 
     // Starts an async execution of the committed command with the current
     // payload. No-op while already executing or if no command is committed.

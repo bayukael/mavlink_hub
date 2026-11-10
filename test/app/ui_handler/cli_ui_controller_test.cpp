@@ -6,12 +6,16 @@
 #include <cstddef>
 #include <gtest/gtest.h>
 #include <set>
+#include <thread>
 
 using pendarlab::app::mavlink_hub::CliUiController;
 using pendarlab::app::mavlink_hub::CliCommandDescriptor;
 using pendarlab::app::mavlink_hub::AppServiceCommandDescriptor;
 using pendarlab::app::mavlink_hub::AppServiceCommandType;
 using pendarlab::app::mavlink_hub::appServiceCommandDescriptors;
+using pendarlab::app::mavlink_hub::kDefaultReportRefreshPeriodMs;
+using pendarlab::app::mavlink_hub::kMinReportRefreshPeriodMs;
+using pendarlab::app::mavlink_hub::kMaxReportRefreshPeriodMs;
 using pendarlab::app::mavlink_hub::test::MockAppService;
 
 namespace
@@ -243,41 +247,48 @@ TEST_F(CliUiControllerTest, OverviewRowsDefaultToEmpty)
   EXPECT_EQ(controller->endpointRows().empty(), true);
 }
 
-TEST_F(CliUiControllerTest, PopulateOverviewOnStartFetchesBothStatusAllProgrammatically)
+TEST_F(CliUiControllerTest, PopulateOverviewOnStartFetchesStatusAndReportsProgrammatically)
 {
   using pendarlab::app::mavlink_hub::OverviewRow;
 
   // A hub already holding registered agents and endpoints (e.g. from a plan
-  // applied on startup). The mock surfaces them through the status-list payloads.
+  // applied on startup). The mock surfaces them through the status-list and
+  // agent_report_list payloads.
   app_service.agent_status_all["agent-1"] = 2;      // AgentState::ACTIVE
   app_service.agent_status_all["agent-2"] = 0;      // AgentState::IDLE
+  app_service.agent_report_all["agent-1"] = "50/50/50/50/30/10";
+  app_service.agent_report_all["agent-2"] = "100/100";
   app_service.endpoint_status_all["endpoint-1"] = 2; // MavlinkEndpointState::CONNECTED
   app_service.endpoint_status_all["endpoint-2"] = 0; // MavlinkEndpointState::DISCONNECTED
 
   controller->updateOverviewData();
 
-  // Both commands were issued programmatically through the service.
-  ASSERT_EQ(app_service.commands.size(), 2u);
+  // All three fetches were issued programmatically through the service:
+  // agent status list, agent report list (all), endpoint status list.
+  ASSERT_EQ(app_service.commands.size(), 3u);
   EXPECT_EQ(app_service.commands[0].cmd_type, AppServiceCommandType::GET_AGENT_STATUS_ALL);
-  EXPECT_EQ(app_service.commands[1].cmd_type, AppServiceCommandType::GET_ENDPOINT_STATUS_ALL);
+  EXPECT_EQ(app_service.commands[1].cmd_type, AppServiceCommandType::GET_AGENT_REPORT_ALL);
+  EXPECT_EQ(app_service.commands[2].cmd_type, AppServiceCommandType::GET_ENDPOINT_STATUS_ALL);
   // No user interaction is involved: the committed command is untouched.
   EXPECT_EQ(controller->committedCommand(), -1);
 
   // Row order is not guaranteed (the mock returns an unordered map), so find by
-  // name. Each row carries name + lowercase status; type/report are left blank.
+  // name. Each row carries name + lowercase status; type is left blank and each
+  // agent's report is surfaced as-is (endpoints have no report).
   const auto& agent_rows = controller->agentRows();
   ASSERT_EQ(agent_rows.size(), 2u);
   bool saw_agent_1 = false;
   bool saw_agent_2 = false;
   for (const auto& row : agent_rows) {
     EXPECT_EQ(row.type, "");
-    EXPECT_EQ(row.report, "");
     if (row.name == "agent-1") {
       saw_agent_1 = true;
       EXPECT_EQ(row.status, "active");
+      EXPECT_EQ(row.report, "50/50/50/50/30/10");
     } else if (row.name == "agent-2") {
       saw_agent_2 = true;
       EXPECT_EQ(row.status, "idle");
+      EXPECT_EQ(row.report, "100/100");
     }
   }
   EXPECT_EQ(saw_agent_1, true);
@@ -352,10 +363,11 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterAppServiceCommand
   controller->joinExecution();
   ASSERT_EQ(app_service.commands.size(), 1u);
 
-  // Now run the startup fetch; it must add its two status commands without
-  // disturbing the user's committed command, executing flag, or result.
+  // Now run the startup fetch; it must add its three commands (agent status,
+  // agent report, endpoint status) without disturbing the user's committed
+  // command, executing flag, or result.
   controller->updateOverviewData();
-  ASSERT_EQ(app_service.commands.size(), 3u);
+  ASSERT_EQ(app_service.commands.size(), 4u);
 
   EXPECT_EQ(controller->committedCommand(), menuIndexOf(*controller, AppServiceCommandType::GET_ENDPOINT_STATUS));
   EXPECT_EQ(controller->executing(), false);
@@ -365,9 +377,133 @@ TEST_F(CliUiControllerTest, PopulateOverviewOnStartDoesNotAlterAppServiceCommand
   // The user-command path still executes exactly as before after the fetch.
   controller->executeCurrentCommand();
   controller->joinExecution();
-  ASSERT_EQ(app_service.commands.size(), 4u);
-  EXPECT_EQ(app_service.commands[3].cmd_type, AppServiceCommandType::GET_ENDPOINT_STATUS);
-  EXPECT_EQ(app_service.commands[3].payload, "{\"name\": \"ep1\"}");
+  ASSERT_EQ(app_service.commands.size(), 5u);
+  EXPECT_EQ(app_service.commands[4].cmd_type, AppServiceCommandType::GET_ENDPOINT_STATUS);
+  EXPECT_EQ(app_service.commands[4].payload, "{\"name\": \"ep1\"}");
+}
+
+// -----------------------------------------------------------------------------
+// Live periodic agent-report refresh (MHP-010)
+// -----------------------------------------------------------------------------
+
+TEST_F(CliUiControllerTest, ReportRefreshPeriodDefaultsTo1000)
+{
+  EXPECT_EQ(controller->reportRefreshPeriod(), 1000);
+  EXPECT_EQ(controller->reportRefreshPeriodAtMin(), false);
+  EXPECT_EQ(controller->reportRefreshPeriodAtMax(), false);
+}
+
+TEST_F(CliUiControllerTest, ReportRefreshPeriodStepsAndClamps)
+{
+  // Default is 1000; a single increase bumps it by exactly 100 ms.
+  controller->increaseReportRefreshPeriod();
+  EXPECT_EQ(controller->reportRefreshPeriod(), 1100);
+
+  // Decreasing steps by 100 ms...
+  controller->decreaseReportRefreshPeriod();
+  EXPECT_EQ(controller->reportRefreshPeriod(), 1000);
+  controller->decreaseReportRefreshPeriod();
+  EXPECT_EQ(controller->reportRefreshPeriod(), 900);
+  EXPECT_EQ(controller->reportRefreshPeriodAtMin(), false);
+
+  // ...down to the 100 ms minimum bound, where it clamps and '-' is a no-op.
+  while (controller->reportRefreshPeriod() > kMinReportRefreshPeriodMs) {
+    controller->decreaseReportRefreshPeriod();
+  }
+  EXPECT_EQ(controller->reportRefreshPeriod(), kMinReportRefreshPeriodMs);
+  EXPECT_EQ(controller->reportRefreshPeriodAtMin(), true);
+  controller->decreaseReportRefreshPeriod(); // no-op at the minimum
+  EXPECT_EQ(controller->reportRefreshPeriod(), kMinReportRefreshPeriodMs);
+  controller->increaseReportRefreshPeriod();
+  EXPECT_EQ(controller->reportRefreshPeriod(), 200);
+  EXPECT_EQ(controller->reportRefreshPeriodAtMin(), false);
+
+  // ...up to the 5000 ms maximum bound, where it clamps and '+' is a no-op.
+  while (controller->reportRefreshPeriod() < kMaxReportRefreshPeriodMs) {
+    controller->increaseReportRefreshPeriod();
+  }
+  EXPECT_EQ(controller->reportRefreshPeriod(), kMaxReportRefreshPeriodMs);
+  EXPECT_EQ(controller->reportRefreshPeriodAtMax(), true);
+  controller->increaseReportRefreshPeriod(); // no-op at the maximum
+  EXPECT_EQ(controller->reportRefreshPeriod(), kMaxReportRefreshPeriodMs);
+  controller->decreaseReportRefreshPeriod();
+  EXPECT_EQ(controller->reportRefreshPeriod(), 4900);
+  EXPECT_EQ(controller->reportRefreshPeriodAtMax(), false);
+}
+
+TEST_F(CliUiControllerTest, PeriodicRefreshFiresAndStopsCleanly)
+{
+  app_service.agent_status_all["agent-1"] = 2;      // AgentState::ACTIVE
+  app_service.agent_report_all["agent-1"] = "50/50";
+
+  // Short cadence (the 100 ms minimum) so the worker fires promptly.
+  for (int i = 0; i < 9; ++i) {
+    controller->decreaseReportRefreshPeriod();
+  }
+  EXPECT_EQ(controller->reportRefreshPeriod(), kMinReportRefreshPeriodMs);
+
+  std::atomic<int> update_count{ 0 };
+  controller->setOnUpdate([&] { update_count.fetch_add(1); });
+
+  controller->startPeriodicRefresh();
+  std::this_thread::sleep_for(std::chrono::milliseconds(550));
+  controller->stopPeriodicRefresh();
+
+  // The worker fired several times (each cycle repopulates rows then notifies).
+  EXPECT_GE(update_count.load(), 2);
+
+  // After stop, the worker is joined and no longer fires.
+  const int after_stop = update_count.load();
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+  EXPECT_EQ(update_count.load(), after_stop);
+
+  // The periodic worker drove the same overview path: rows are populated.
+  const auto& rows = controller->agentRows();
+  ASSERT_EQ(rows.size(), 1u);
+  EXPECT_EQ(rows[0].name, "agent-1");
+  EXPECT_EQ(rows[0].report, "50/50");
+}
+
+TEST_F(CliUiControllerTest, StartPeriodicRefreshIsIdempotent)
+{
+  std::atomic<int> update_count{ 0 };
+  controller->setOnUpdate([&] { update_count.fetch_add(1); });
+
+  controller->startPeriodicRefresh();
+  controller->startPeriodicRefresh();  // second start must not spawn a 2nd worker
+  std::this_thread::sleep_for(std::chrono::milliseconds(250));
+  controller->stopPeriodicRefresh();
+  controller->stopPeriodicRefresh();   // second stop must be a safe no-op
+
+  // Idempotent start/stop: the worker honored the single stop and stopped.
+  const int stopped = update_count.load();
+  std::this_thread::sleep_for(std::chrono::milliseconds(200));
+  EXPECT_EQ(update_count.load(), stopped);
+}
+
+TEST_F(CliUiControllerTest, OnDemandRefreshDuringActivePeriodicCycleIsCorrect)
+{
+  app_service.agent_status_all["agent-1"] = 2;
+  app_service.agent_report_all["agent-1"] = "50/50";
+
+  for (int i = 0; i < 9; ++i) {
+    controller->decreaseReportRefreshPeriod();
+  }
+  controller->startPeriodicRefresh();
+
+  // A manual on-demand refresh issued while the periodic worker is active must
+  // not conflict with the worker's updates (both drive updateOverviewData).
+  controller->updateOverviewData();
+  std::this_thread::sleep_for(std::chrono::milliseconds(300));
+
+  controller->stopPeriodicRefresh();
+
+  // The rows reflect the correct latest data with no torn/corrupted state.
+  const auto& rows = controller->agentRows();
+  ASSERT_EQ(rows.size(), 1u);
+  EXPECT_EQ(rows[0].name, "agent-1");
+  EXPECT_EQ(rows[0].status, "active");
+  EXPECT_EQ(rows[0].report, "50/50");
 }
 
 int main(int argc, char** argv)

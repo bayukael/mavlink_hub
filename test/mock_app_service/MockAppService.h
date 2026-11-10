@@ -29,6 +29,11 @@ namespace pendarlab::app::mavlink_hub::test
     std::unordered_map<std::string, int> agent_status_all;
     std::unordered_map<std::string, int> endpoint_status_all;
 
+    // Report data surfaced for the GET_AGENT_REPORT_ALL fetch (map: agent name
+    // -> opaque report string), matching what the real AppService/JsonUtils
+    // agent_report_list encoder produces. Empty by default.
+    std::unordered_map<std::string, std::string> agent_report_all;
+
     // Optional: make a specific command sleep before returning, to give a
     // window for testing async / ignored-execute behavior. Default (no
     // slow_command, or zero delay) leaves existing behavior unchanged.
@@ -73,6 +78,20 @@ namespace pendarlab::app::mavlink_hub::test
       case AppServiceCommandType::GET_ENDPOINT_STATUS_ALL:
         result.data = encodeStatusList("endpoint_status_list", endpoint_status_all);
         break;
+      case AppServiceCommandType::GET_AGENT_REPORT_ALL: {
+        std::string out = "{ \"agent_report_list\": [";
+        bool first = true;
+        for (const auto& [name, report] : agent_report_all) {
+          if (!first) {
+            out += ", ";
+          }
+          first = false;
+          out += "{ \"name\": \"" + name + "\", \"report\": \"" + report + "\" }";
+        }
+        out += " ] }";
+        result.data = out;
+        break;
+      }
       default: break;
     }
     result.message.push_back(result.success ? "[MockAppService]: ok" : "[MockAppService]: failed");

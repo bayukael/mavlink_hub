@@ -55,6 +55,15 @@ namespace pendarlab::app::mavlink_hub::json_utils
   /// Each report string is transported as-is; no format is imposed on its content.
   std::string agentReportListToJsonString(const std::unordered_map<std::string, std::string>& list);
 
+  /// Decode an "agent_report_list" payload (the shape produced by
+  /// agentReportListToJsonString) into one {name, report} pair per entry, where
+  /// \c report is the agent's opaque report string, transported as-is (no format
+  /// is imposed or transformed).
+  ///
+  /// @return std::nullopt if the payload is not valid JSON or does not match the
+  ///         encoder's list-of-{name, report} shape.
+  std::optional<std::vector<std::pair<std::string, std::string>>> agentReportListFromJsonString(const std::string& json_str);
+
   /// Serialize an endpoint name list to a JSON string under the "endpoint_list" key.
   std::string endpointListToJsonString(const std::vector<std::string>& list);
 

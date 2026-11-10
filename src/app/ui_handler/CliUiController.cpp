@@ -2,9 +2,13 @@
 
 #include "common/json_utils/JsonUtils.h"
 
+#include <atomic>
+#include <chrono>
+#include <condition_variable>
 #include <functional>
 #include <mutex>
 #include <thread>
+#include <unordered_map>
 #include <utility>
 
 namespace pendarlab::app::mavlink_hub
@@ -26,8 +30,28 @@ namespace pendarlab::app::mavlink_hub
     std::thread execute_thread;
     std::function<void()> on_update;
 
+    // Overview rows. Guarded by rows_mutex: updateOverviewData() (called both at
+    // startup and periodically on the worker thread) swaps complete new vectors
+    // in under the lock, and agentRows()/endpointRows() return a snapshot copy
+    // under the lock, so reads and writes never race.
+    std::mutex rows_mutex;
     std::vector<OverviewRow> agent_rows;
     std::vector<OverviewRow> endpoint_rows;
+
+    // Report refresh period (milliseconds), in [kMinReportRefreshPeriodMs,
+    // kMaxReportRefreshPeriodMs], default kDefaultReportRefreshPeriodMs.
+    // Guarded by period_mutex; changing it notifies the refresh condition
+    // variable so the worker adopts the new cadence promptly.
+    std::mutex period_mutex;
+    int report_refresh_period_ms = kDefaultReportRefreshPeriodMs;
+
+    // Periodic report refresh worker thread. The worker waits on refresh_cv with
+    // a timeout of the current period, then calls updateOverviewData() and the
+    // on_update callback. refresh_stop + a notify are used to stop it cleanly.
+    std::atomic<bool> refresh_stop{ false };
+    std::mutex refresh_mutex;
+    std::condition_variable refresh_cv;
+    std::thread refresh_thread;
 
     bool validCommittedCommand() const;
   };
@@ -71,6 +95,7 @@ namespace pendarlab::app::mavlink_hub
   }
   CliUiController::~CliUiController()
   {
+    stopPeriodicRefresh();
     joinExecution();
   }
   CliUiController::CliUiController(CliUiController&&) noexcept = default;
@@ -140,23 +165,26 @@ namespace pendarlab::app::mavlink_hub
     d->command_result.reset();
   }
 
-  const std::vector<OverviewRow>& CliUiController::agentRows() const
+  std::vector<OverviewRow> CliUiController::agentRows() const
   {
+    std::lock_guard<std::mutex> lock(d->rows_mutex);
     return d->agent_rows;
   }
 
-  const std::vector<OverviewRow>& CliUiController::endpointRows() const
+  std::vector<OverviewRow> CliUiController::endpointRows() const
   {
+    std::lock_guard<std::mutex> lock(d->rows_mutex);
     return d->endpoint_rows;
   }
 
   void CliUiController::updateOverviewData()
   {
-    // Programmatic fetch of the agents'/endpoints' list and status. This calls
-    // executeCommand directly (synchronously) rather than through the
+    // Programmatic fetch of the agents'/endpoints' list, status, and reports.
+    // This calls executeCommand directly (synchronously) rather than through the
     // committed-command path, so it neither enqueues commands nor touches the
     // committed/selected command, payload, or result state. Called at UI start
-    // and reusable by a later periodic refresh.
+    // and periodically by the report-refresh worker thread; both drive this same
+    // report-surfacing path, so on-demand and periodic refreshes never conflict.
     AppServiceCommand agent_cmd;
     agent_cmd.cmd_type = AppServiceCommandType::GET_AGENT_STATUS_ALL;
     const CommandResult agent_result = d->app_service.executeCommand(agent_cmd);
@@ -169,11 +197,36 @@ namespace pendarlab::app::mavlink_hub
           OverviewRow row;
           row.name = std::move(name);
           row.status = std::move(status);
-          // Type and Report are intentionally left blank: no layer stores an
-          // agent/endpoint type yet, and reports are a later (periodic) concern.
+          // Type is intentionally left blank: no layer stores an agent type yet.
           rows.push_back(std::move(row));
         }
+        std::lock_guard<std::mutex> lock(d->rows_mutex);
         d->agent_rows = std::move(rows);
+      }
+    }
+
+    // Fetch every registered agent's report and attach it to the matching agent
+    // row by name. Endpoints have no report (only agents do), so only the agent
+    // table gets a Report populated. The report string is opaque; it is shown
+    // as-is.
+    AppServiceCommand report_cmd;
+    report_cmd.cmd_type = AppServiceCommandType::GET_AGENT_REPORT_ALL;
+    const CommandResult report_result = d->app_service.executeCommand(report_cmd);
+    if (report_result.success) {
+      auto report_entries = json_utils::agentReportListFromJsonString(report_result.data);
+      if (report_entries.has_value()) {
+        std::unordered_map<std::string, std::string> report_by_name;
+        report_by_name.reserve(report_entries->size());
+        for (auto& [name, report] : *report_entries) {
+          report_by_name[std::move(name)] = std::move(report);
+        }
+        std::lock_guard<std::mutex> lock(d->rows_mutex);
+        for (OverviewRow& row : d->agent_rows) {
+          auto it = report_by_name.find(row.name);
+          if (it != report_by_name.end()) {
+            row.report = it->second;
+          }
+        }
       }
     }
 
@@ -191,8 +244,101 @@ namespace pendarlab::app::mavlink_hub
           row.status = std::move(status);
           rows.push_back(std::move(row));
         }
+        std::lock_guard<std::mutex> lock(d->rows_mutex);
         d->endpoint_rows = std::move(rows);
       }
+    }
+  }
+
+  int CliUiController::reportRefreshPeriod() const
+  {
+    std::lock_guard<std::mutex> lock(d->period_mutex);
+    return d->report_refresh_period_ms;
+  }
+
+  bool CliUiController::reportRefreshPeriodAtMin() const
+  {
+    return reportRefreshPeriod() <= kMinReportRefreshPeriodMs;
+  }
+
+  bool CliUiController::reportRefreshPeriodAtMax() const
+  {
+    return reportRefreshPeriod() >= kMaxReportRefreshPeriodMs;
+  }
+
+  void CliUiController::increaseReportRefreshPeriod()
+  {
+    bool notified = false;
+    {
+      std::lock_guard<std::mutex> lock(d->period_mutex);
+      if (d->report_refresh_period_ms < kMaxReportRefreshPeriodMs) {
+        d->report_refresh_period_ms += kReportRefreshPeriodStepMs;
+        notified = true;
+      }
+    }
+    // Wake the worker so it adopts the new cadence promptly.
+    if (notified) {
+      d->refresh_cv.notify_all();
+    }
+  }
+
+  void CliUiController::decreaseReportRefreshPeriod()
+  {
+    bool notified = false;
+    {
+      std::lock_guard<std::mutex> lock(d->period_mutex);
+      if (d->report_refresh_period_ms > kMinReportRefreshPeriodMs) {
+        d->report_refresh_period_ms -= kReportRefreshPeriodStepMs;
+        notified = true;
+      }
+    }
+    if (notified) {
+      d->refresh_cv.notify_all();
+    }
+  }
+
+  void CliUiController::startPeriodicRefresh()
+  {
+    if (d->refresh_thread.joinable()) {
+      return;
+    }
+
+    d->refresh_stop = false;
+
+    // The periodic report-refresh worker: wait for the current period, then
+    // re-query the agents' status and reports and repopulate the overview rows
+    // (via the same updateOverviewData() path the startup population uses), and
+    // notify the view so it redraws. The slow command I/O stays on this worker
+    // thread, off the UI thread, so the UI never stalls.
+    d->refresh_thread = std::thread([this]() {
+      std::unique_lock<std::mutex> lock(d->refresh_mutex);
+      while (!d->refresh_stop.load()) {
+        const int period_ms = reportRefreshPeriod();
+        if (d->refresh_cv.wait_for(lock, std::chrono::milliseconds(period_ms)) == std::cv_status::timeout) {
+          // Time to refresh. Unlock while doing the work so a stop/period
+          // change can proceed.
+          lock.unlock();
+          updateOverviewData();
+          if (d->on_update) {
+            d->on_update();
+          }
+          lock.lock();
+        }
+        // On a notify (period change or stop), loop around to re-read the period
+        // (and the stop flag); only a timeout triggers an actual refresh.
+      }
+    });
+  }
+
+  void CliUiController::stopPeriodicRefresh()
+  {
+    {
+      std::lock_guard<std::mutex> lock(d->refresh_mutex);
+      d->refresh_stop = true;
+    }
+    d->refresh_cv.notify_all();
+    if (d->refresh_thread.joinable()) {
+      d->refresh_thread.join();
     }
   }
 
