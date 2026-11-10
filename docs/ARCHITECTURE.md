@@ -406,7 +406,8 @@ Data types shared by the application and UI layers (`app/types/`).
 - **`CliCommandDescriptor`** — `{ AppServiceCommandType type; std::string name; bool
   requires_payload; std::string payload_hint; std::string description; }`: a UI-owned,
   self-describing command entry mirroring `AppServiceCommandDescriptor` (with an owned `name`
-  string and a `description` that is currently empty). A single `std::array` of these is the
+  string and a `description` derived from the descriptor by default, with an optional
+  non-empty override). A single `std::array` of these is the
   controller's one command representation; `CliUiHandler` renders each `name` in the menu and
   dispatches by `type`.
 - **`CommandResult`** — `{ bool success; std::vector<std::string> message; std::string

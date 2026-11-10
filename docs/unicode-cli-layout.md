@@ -112,6 +112,9 @@ The two-line block under the Command Lists / Payload panes:
 - **Selected Command:** showing the currently committed command name.
 - **Payload:** showing whether the committed command requires a payload
   (`required` / `not required`).
+- When the committed command carries a description, an optional third section
+  below a separator shows the command's human-readable
+  **Description:** (label centered) and the description text.
 
 #### 6. Action Pane (`action_pane`)
 The panel titled **"Action"** containing the command action buttons and the
