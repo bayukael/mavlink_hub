@@ -52,6 +52,16 @@ TEST_F(AppServiceCommandDescriptorTest, PayloadHintIsEmptyWhenNoPayloadRequired)
   }
 }
 
+TEST_F(AppServiceCommandDescriptorTest, DescriptionsArePopulatedAndWithinLimit)
+{
+  constexpr std::size_t kMaxDescriptionLength = 150;
+  for (const auto& descriptor : appServiceCommandDescriptors()) {
+    EXPECT_EQ(false, descriptor.description.empty()) << "description should be non-empty for: " << descriptor.name;
+    EXPECT_LE(descriptor.description.size(), kMaxDescriptionLength)
+        << "description too long for: " << descriptor.name;
+  }
+}
+
 int main(int argc, char** argv)
 {
   ::testing::InitGoogleTest(&argc, argv);
