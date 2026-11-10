@@ -1,7 +1,7 @@
 #pragma once
 
 #include "app/app_service/IAppService.h"
-#include "app/app_service/AppServiceCommandDescriptor.h"
+#include "app/ui_handler/CliCommandDescriptor.h"
 #include "app/types/CommandResult.h"
 
 #include <array>
@@ -44,15 +44,14 @@ namespace pendarlab::app::mavlink_hub
     CliUiController& operator=(CliUiController&&) noexcept;
 
     /// @return the descriptors for the eight user-executable commands, in menu
-    ///         display order, each derived from appServiceCommandDescriptors()
-    ///         by indexing with its own AppServiceCommandType.
-    const std::array<AppServiceCommandDescriptor, 8>& commandDescriptors() const;
-
-    /// @return display names for every command (one per descriptor).
-    const std::vector<std::string>& commandEntries() const;
-
-    /// Mutable access to the command display names, for the view to bind against.
-    std::vector<std::string>& commandEntries();
+    ///         display order; each entry is a `CliCommandDescriptor` derived
+    ///         from `appServiceCommandDescriptors()` by indexing with its own
+    ///         `AppServiceCommandType`. This is the single command container held
+    ///         by the controller - each entry carries its own dispatch type and
+    ///         display name, so the menu needs no separate index map and no
+    ///         parallel names container. A `std::array` is used because the menu
+    ///         membership is fixed and known up front.
+    const std::array<CliCommandDescriptor, 8>& commandDescriptors() const;
 
     /// @return index of the currently highlighted (but not necessarily committed) command.
     int selectedCommand() const;

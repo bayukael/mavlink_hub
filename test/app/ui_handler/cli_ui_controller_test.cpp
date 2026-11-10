@@ -8,6 +8,7 @@
 #include <set>
 
 using pendarlab::app::mavlink_hub::CliUiController;
+using pendarlab::app::mavlink_hub::CliCommandDescriptor;
 using pendarlab::app::mavlink_hub::AppServiceCommandDescriptor;
 using pendarlab::app::mavlink_hub::AppServiceCommandType;
 using pendarlab::app::mavlink_hub::appServiceCommandDescriptors;
@@ -44,9 +45,9 @@ TEST_F(CliUiControllerTest, LoadsCommandDescriptorsFromService)
 {
   const auto& descriptors = controller->commandDescriptors();
   ASSERT_EQ(descriptors.size(), 8u);
-  ASSERT_EQ(descriptors.size(), controller->commandEntries().size());
   EXPECT_EQ(descriptors[0].type, AppServiceCommandType::GET_ENDPOINT_LIST);
-  EXPECT_EQ(controller->commandEntries()[0], std::string(descriptors[0].name));
+  EXPECT_EQ(descriptors[0].name,
+            std::string(appServiceCommandDescriptors()[static_cast<std::size_t>(descriptors[0].type)].name));
 }
 
 // The menu is a derived view of the canonical table: exactly the eight
@@ -57,7 +58,6 @@ TEST_F(CliUiControllerTest, CommandDescriptorsHoldExactlyTheEightUserCommandsInD
 {
   const auto& descriptors = controller->commandDescriptors();
   ASSERT_EQ(descriptors.size(), 8u);
-  ASSERT_EQ(descriptors.size(), controller->commandEntries().size());
 
   // The intended display order, written out one by one.
   EXPECT_EQ(descriptors[0].type, AppServiceCommandType::GET_ENDPOINT_LIST);
@@ -70,20 +70,18 @@ TEST_F(CliUiControllerTest, CommandDescriptorsHoldExactlyTheEightUserCommandsInD
   EXPECT_EQ(descriptors[7].type, AppServiceCommandType::GET_AGENT_REPORT_ALL);
 
   std::set<std::string> names;
-  for (std::size_t i = 0; i < descriptors.size(); ++i) {
+  for (const CliCommandDescriptor& descriptor : descriptors) {
     // Non-empty, unique names.
-    EXPECT_EQ(false, descriptors[i].name.empty());
-    EXPECT_EQ(true, names.insert(std::string(descriptors[i].name)).second)
-        << "duplicate name: " << descriptors[i].name;
+    EXPECT_EQ(false, descriptor.name.empty());
+    EXPECT_EQ(true, names.insert(descriptor.name).second)
+        << "duplicate name: " << descriptor.name;
     // Derived from the canonical table (not re-declared literals): each entry
     // carries its own type, which indexes the canonical table.
     const AppServiceCommandDescriptor& canonical =
-        appServiceCommandDescriptors()[static_cast<std::size_t>(descriptors[i].type)];
-    EXPECT_EQ(descriptors[i].name, canonical.name);
-    EXPECT_EQ(descriptors[i].requires_payload, canonical.requires_payload);
-    EXPECT_EQ(descriptors[i].payload_hint, canonical.payload_hint);
-    // The displayed entry name is the descriptor's canonical name.
-    EXPECT_EQ(controller->commandEntries()[i], std::string(descriptors[i].name));
+        appServiceCommandDescriptors()[static_cast<std::size_t>(descriptor.type)];
+    EXPECT_EQ(descriptor.name, std::string(canonical.name));
+    EXPECT_EQ(descriptor.requires_payload, canonical.requires_payload);
+    EXPECT_EQ(descriptor.payload_hint, std::string(canonical.payload_hint));
   }
   EXPECT_EQ(names.size(), descriptors.size());
 }

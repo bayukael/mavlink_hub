@@ -1,6 +1,7 @@
 #include "app/ui_handler/CliUiHandler.h"
 
 #include "app/shutdown_controller/ShutdownController.h"
+#include "app/ui_handler/CliCommandDescriptor.h"
 #include "app/ui_handler/CliRoutine.h"
 #include "app/ui_handler/CliUiController.h"
 #include "common/types/OperationResult.h"
@@ -21,6 +22,12 @@ namespace pendarlab::app::mavlink_hub
     CliUiController controller;
 
     std::string app_status = "Running";
+
+    // Display names for the command menu, projected from the controller's
+    // single CliCommandDescriptor vector. The controller model holds one
+    // self-describing command vector; this is a render-side name projection the
+    // FTXUI Menu binds to (it needs a stable std::vector<std::string>).
+    std::vector<std::string> command_entries;
 
     const std::string command_info_selected_label = " Selected Command: ";
     const std::string command_info_payload_hint_label = "          Payload: ";
@@ -55,7 +62,9 @@ namespace pendarlab::app::mavlink_hub
       : shutdown_controller(shutdown_controller), controller(appsrv)
   {
     const auto& descriptors = controller.commandDescriptors();
-    for (const AppServiceCommandDescriptor& descriptor : descriptors) {
+    command_entries.reserve(descriptors.size());
+    for (const CliCommandDescriptor& descriptor : descriptors) {
+      command_entries.push_back(descriptor.name);
       max_command_name_len = std::max(max_command_name_len, static_cast<int>(descriptor.name.size()));
     }
 
@@ -71,7 +80,7 @@ namespace pendarlab::app::mavlink_hub
   {
     using namespace ftxui;
 
-    std::vector<std::string>& command_entries = controller.commandEntries();
+    std::vector<std::string>& command_entries = this->command_entries;
     int& selected_command = controller.selectedCommand();
 
     MenuOption command_options;
@@ -111,8 +120,8 @@ namespace pendarlab::app::mavlink_hub
       const int committed_command = controller.committedCommand();
       const auto& descriptors = controller.commandDescriptors();
       if (committed_command >= 0 && committed_command < static_cast<int>(descriptors.size())) {
-        const AppServiceCommandDescriptor& descriptor = descriptors[static_cast<std::size_t>(committed_command)];
-        selected_name = std::string(descriptor.name);
+        const CliCommandDescriptor& descriptor = descriptors[static_cast<std::size_t>(committed_command)];
+        selected_name = descriptor.name;
         payload_hint = descriptor.requires_payload ? "required" : "not required";
       }
 
@@ -382,7 +391,7 @@ namespace pendarlab::app::mavlink_hub
       const int committed_command = d->controller.committedCommand();
       const auto& descriptors = d->controller.commandDescriptors();
       if (committed_command >= 0 && committed_command < static_cast<int>(descriptors.size())) {
-        waiting_for = std::string(descriptors[static_cast<std::size_t>(committed_command)].name);
+        waiting_for = descriptors[static_cast<std::size_t>(committed_command)].name;
       }
       d->app_status = "Exiting - waiting for: " + waiting_for;
       if (ftxui::App::Active() != nullptr) {
