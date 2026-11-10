@@ -31,7 +31,7 @@ namespace pendarlab::app::mavlink_hub
 
     const std::string command_info_selected_label = " Selected Command: ";
     const std::string command_info_payload_hint_label = "          Payload: ";
-    const std::string command_info_description_label = "    Description: ";
+    const std::string command_info_description_label = " Description: ";
     int max_command_info_len = 0;
     int max_command_info_label_len = 0;
     int max_command_name_len = 0;
@@ -134,11 +134,12 @@ namespace pendarlab::app::mavlink_hub
       Elements info_elements{
           text(command_info_selected_label + selected_name) | bold,
           text(command_info_payload_hint_label + payload_hint) | dim,
+          separator(),
+          text(command_info_description_label) | dim
       };
       if (!description.empty()) {
-        info_elements.push_back(separator());
-        info_elements.push_back(text(command_info_description_label) | center | dim);
-        info_elements.push_back(text(description) | dim);
+        Element padded_description = hbox({text(" "), hflow(paragraph(description) | dim), text(" ")});
+        info_elements.push_back(padded_description);
       }
 
       return vbox(std::move(info_elements));
@@ -178,7 +179,7 @@ namespace pendarlab::app::mavlink_hub
       return vbox({
         hbox({ command_menu_complete->Render(), separator(), payload_complete->Render() | flex }) | flex,
         separator(),
-        hbox({ command_info->Render() | size(WIDTH, GREATER_THAN, max_command_info_len), separator(), action_pane->Render()}) | notflex
+        hbox({ command_info->Render() | size(WIDTH, EQUAL, max_command_info_len), separator(), action_pane->Render()}) | notflex
       });
     });
     // clang-format on
