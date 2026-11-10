@@ -332,11 +332,13 @@ namespace pendarlab::app::mavlink_hub
     auto make_period_button_options = [&](std::function<bool()> at_bound) {
       ButtonOption opts;
       opts.transform = [at_bound = std::move(at_bound)](EntryState state) {
-        Element e = text(state.label);
-        if (state.focused) {
-          e = inverted(e);
-        } else if (at_bound()) {
-          e = std::move(e) | dim;
+        Element label = text(state.label);
+        Element e;
+        if (at_bound()) {
+          e = label | dim;
+        }
+        else{
+          e = (state.focused ? inverted(label) : label) | bold;
         }
         return e;
       };
