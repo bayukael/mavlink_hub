@@ -31,6 +31,7 @@ namespace pendarlab::app::mavlink_hub
 
     const std::string command_info_selected_label = " Selected Command: ";
     const std::string command_info_payload_hint_label = "          Payload: ";
+    const std::string command_info_description_label = " Description: ";
     int max_command_info_len = 0;
     int max_command_info_label_len = 0;
     int max_command_name_len = 0;
@@ -69,6 +70,7 @@ namespace pendarlab::app::mavlink_hub
     }
 
     max_command_info_label_len = std::max(command_info_selected_label.size(), command_info_payload_hint_label.size());
+    max_command_info_label_len = std::max(max_command_info_label_len, static_cast<int>(command_info_description_label.size()));
     max_command_info_len = max_command_name_len + max_command_info_label_len;
 
     max_action_label_len = std::max(max_action_label_len, static_cast<int>(action_execute_command_label.size()));
@@ -117,18 +119,30 @@ namespace pendarlab::app::mavlink_hub
     Component command_info = Renderer([this] {
       std::string selected_name = "none";
       std::string payload_hint = "-";
+      std::string description;
       const int committed_command = controller.committedCommand();
       const auto& descriptors = controller.commandDescriptors();
       if (committed_command >= 0 && committed_command < static_cast<int>(descriptors.size())) {
         const CliCommandDescriptor& descriptor = descriptors[static_cast<std::size_t>(committed_command)];
         selected_name = descriptor.name;
         payload_hint = descriptor.requires_payload ? "required" : "not required";
+        description = descriptor.description;
       }
 
-      return vbox(
-        text(command_info_selected_label + selected_name) | bold,
-        text(command_info_payload_hint_label + payload_hint) | dim
-      );
+      // The command description is optional; render the separator and the
+      // description section only when the committed command carries one.
+      Elements info_elements{
+          text(command_info_selected_label + selected_name) | bold,
+          text(command_info_payload_hint_label + payload_hint) | dim,
+          separator(),
+          text(command_info_description_label) | dim
+      };
+      if (!description.empty()) {
+        Element padded_description = hbox({text(" "), hflow(paragraph(description) | dim), text(" ")});
+        info_elements.push_back(padded_description);
+      }
+
+      return vbox(std::move(info_elements));
     });
     // clang-format on
 
@@ -165,7 +179,7 @@ namespace pendarlab::app::mavlink_hub
       return vbox({
         hbox({ command_menu_complete->Render(), separator(), payload_complete->Render() | flex }) | flex,
         separator(),
-        hbox({ command_info->Render() | size(WIDTH, GREATER_THAN, max_command_info_len), separator(), action_pane->Render()}) | notflex
+        hbox({ command_info->Render() | size(WIDTH, EQUAL, max_command_info_len), separator(), action_pane->Render()}) | notflex
       });
     });
     // clang-format on

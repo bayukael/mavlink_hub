@@ -15,6 +15,7 @@ AppServiceCommandDescriptor makeDescriptor()
   descriptor.name = "get_endpoint_status";
   descriptor.requires_payload = true;
   descriptor.payload_hint = "endpoint name";
+  descriptor.description = "Show the connection status of an endpoint.";
   return descriptor;
 }
 
@@ -27,7 +28,7 @@ protected:
 };
 
 // The constructor mirrors every member of the AppServiceCommandDescriptor it is
-// built from: type, name, requires_payload, and payload_hint.
+// built from: type, name, requires_payload, payload_hint, and description.
 TEST_F(CliCommandDescriptorTest, DerivesAllMembersFromAppServiceCommandDescriptor)
 {
   const CliCommandDescriptor command(descriptor);
@@ -35,6 +36,7 @@ TEST_F(CliCommandDescriptorTest, DerivesAllMembersFromAppServiceCommandDescripto
   EXPECT_EQ(command.name, std::string(descriptor.name));
   EXPECT_EQ(command.requires_payload, descriptor.requires_payload);
   EXPECT_EQ(command.payload_hint, std::string(descriptor.payload_hint));
+  EXPECT_EQ(command.description, std::string(descriptor.description));
 }
 
 // An empty (default) name means "use the descriptor's name".
@@ -61,11 +63,36 @@ TEST_F(CliCommandDescriptorTest, NameIsOwnedCopy)
   EXPECT_EQ(command.name, "get_endpoint_status");
 }
 
-// description is intentionally left empty for now (wired later in MHP-039).
-TEST_F(CliCommandDescriptorTest, DescriptionDefaultsToEmpty)
+// An empty (default) description means "use the descriptor's description".
+TEST_F(CliCommandDescriptorTest, EmptyDescriptionUsesDescriptorDescription)
 {
-  const CliCommandDescriptor command(descriptor);
-  EXPECT_EQ(command.description, "");
+  const CliCommandDescriptor command(descriptor, "");
+  EXPECT_EQ(command.description, std::string(descriptor.description));
+}
+
+// A non-empty description overrides the descriptor's description.
+TEST_F(CliCommandDescriptorTest, NonEmptyDescriptionOverridesDescriptorDescription)
+{
+  const CliCommandDescriptor command(descriptor, "", "A custom description.");
+  EXPECT_EQ(command.description, "A custom description.");
+}
+
+// name override does not disturb description derivation, and vice versa.
+TEST_F(CliCommandDescriptorTest, NameAndDescriptionOverrideIndependently)
+{
+  const CliCommandDescriptor command(descriptor, "my_display_name", "A custom description.");
+  EXPECT_EQ(command.name, "my_display_name");
+  EXPECT_EQ(command.description, "A custom description.");
+}
+
+// description is owned (a std::string), not a borrowed view into the descriptor.
+TEST_F(CliCommandDescriptorTest, DescriptionIsOwnedCopy)
+{
+  std::string source = std::string(descriptor.description);
+  CliCommandDescriptor command(makeDescriptor());
+  command.description = source;
+  source = "mutated";
+  EXPECT_EQ(command.description, "Show the connection status of an endpoint.");
 }
 
 int main(int argc, char** argv)
