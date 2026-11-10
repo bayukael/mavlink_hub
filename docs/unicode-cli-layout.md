@@ -21,6 +21,9 @@
 │ selected command.               ├─────────────────┤│                                                                │
 │                                 │      Ready      ││                                                                │
 ╰─────────────────────────────────┴─────────────────╯╰────────────────────────────────────────────────────────────────╯
+╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│                                    Report Refresh Period: - 1000 ms +                                              │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────╮╭─────────────────────────────────────────╮
 │                                Agent List                                ││              Endpoint List              │ 
 ├──────────────────┬─────────────────────┬─────────────┬───────────────────┤├──────────────┬────────┬─────────────────┤
@@ -72,6 +75,10 @@ Each region is labeled with its part name. Locations refer to the mockup rows
 │                     │    └─ 6d. Action Status           ││                                                          │
 │                     │                                   ││                                                          │
 ╰─────────────────────┴───────────────────────────────────╯╰──────────────────────────────────────────────────────────╯
+╭─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╮
+│10. Report Refresh Period (third row)                                                                               │
+│    (decrease '-' button / current value / increase '+' button)                                                     │
+╰─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────╯
 ╭──────────────────────────────────────────────────────────────────────────╮╭─────────────────────────────────────────╮
 │                           7a. Agent List Header                          ││        8a. Endpoint List Header         │ 
 ├──────────────────┬─────────────────────┬─────────────┬───────────────────┤├──────────────┬────────┬─────────────────┤
@@ -139,8 +146,21 @@ outcome of the last executed command (success/failure and messages). This pane
 is existing behavior and out of MHP-006's core scope, named here for
 completeness.
 
+### 10. Report Refresh Period Control (third row, `report_refresh_period_row`)
+The full-width bordered bar on the **third row** that controls the live periodic
+agent-report refresh. It renders exactly **`Report Refresh Period: - <value> ms +`**
+(`report_refresh_period_row`), where the `-` and `+` are bare buttons
+(`decrease_period_button` / `increase_period_button`) and `<value>` is the current
+refresh period in milliseconds. The `-` button decreases and the `+` button
+increases the period by 100 ms per press, bounded to the range
+[100, 5000] ms (default 1000 ms); the control is a bar, so the row below it is the
+overview. While the period is at its lower bound the `-` button renders dimmed and
+is a no-op; at the upper bound the `+` button does the same, so no further
+single-step change is possible in that direction at the bound. It is not labeled
+in the mockup; proposed symbol `report_refresh_period_row`.
+
 ### Overview Pane
-The third row containing the two tables. Not labeled in the mockup; proposed
+The **fourth row** containing the two tables. Not labeled in the mockup; proposed
 group name for Agent List + Endpoint List. It is the part that MHP-006/007
 primarily specify.
 
@@ -169,8 +189,10 @@ the opaque, free-form text string rendered as-is for that agent (e.g.
 `50/50/50/50/30/10`). The CLI does **not** parse or reformat this text.
 
 > Scope note: per MHP-006, the report's acquisition mechanism and full display
-> wiring are deferred to MHP-009. This layout only specifies its *presentation*
-> as an opaque text cell. MHP-007 structures the column; MHP-009 fills it.
+> wiring are deferred. This layout only specifies its *presentation* as an opaque
+> text cell. MHP-007 structures the column; the report is populated and live-refreshed
+> by the periodic agent-report refresh (MHP-010) through the controller's
+> `updateOverviewData()`.
 
 #### 8. Endpoint List Table (`endpoint_list`)
 The right table, titled **"Endpoint List"**. One row per endpoint. Endpoints

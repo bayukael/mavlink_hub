@@ -98,13 +98,14 @@ TEST_F(CliUiControllerPlanTest, OverviewReflectsAgentsAndEndpointsFromStartupLoa
   };
 
   // Agents created by the plan are IDLE; their row shows the lowercase status
-  // and empty Type/Report.
+  // and empty type, and the report is surfaced from the agent's report() (the
+  // MockAgent overrides report() with kReportPayload = "MockAgent Report").
   ASSERT_EQ(controller.agentRows().size(), 2u);
   EXPECT_EQ(find_status(controller.agentRows(), "ag_iris"), "idle");
   EXPECT_EQ(find_status(controller.agentRows(), "ag_heartbeat"), "idle");
   for (const auto& row : controller.agentRows()) {
     EXPECT_EQ(row.type, "");
-    EXPECT_EQ(row.report, "");
+    EXPECT_EQ(row.report, "MockAgent Report");
   }
 
   // Endpoints created by the plan are DISCONNECTED (connect_on_create=false).

@@ -702,6 +702,59 @@ TEST_F(StatusListFromJsonStringTest, MalformedOrMismatchedStatusListShouldReturn
   EXPECT_EQ(json_utils::endpointStatusListFromJsonString("{ \"endpoint_status_list\": [ { \"name\": \"a\" } ] }"), std::nullopt);
 }
 
+// The agent_report_list decoder mirrors the agentReportListToJsonString encoder:
+// a list of {name, report} entries with the report string transported as-is.
+TEST_F(StatusListFromJsonStringTest, AgentReportListShouldDecodeToNameReportPairs)
+{
+  using namespace pendarlab::app::mavlink_hub;
+
+  std::unordered_map<std::string, std::string> reports{
+    { "agent-1", "50/50/50/50/30/10" },
+    { "agent-2", "all systems nominal" },
+    { "agent-3", "" },  // an empty report is still a valid report string
+  };
+  const std::string payload = json_utils::agentReportListToJsonString(reports);
+
+  auto decoded = json_utils::agentReportListFromJsonString(payload);
+  ASSERT_NE(decoded, std::nullopt);
+  ASSERT_EQ(decoded->size(), 3u);
+
+  std::unordered_map<std::string, std::string> name_to_report;
+  for (const auto& [name, report] : *decoded) {
+    name_to_report[name] = report;
+  }
+  EXPECT_EQ(name_to_report["agent-1"], "50/50/50/50/30/10");
+  EXPECT_EQ(name_to_report["agent-2"], "all systems nominal");
+  EXPECT_EQ(name_to_report["agent-3"], "");
+}
+
+TEST_F(StatusListFromJsonStringTest, EmptyAgentReportListShouldDecodeToEmptyVector)
+{
+  using namespace pendarlab::app::mavlink_hub;
+
+  auto reports = json_utils::agentReportListFromJsonString("{ \"agent_report_list\": [] }");
+  ASSERT_NE(reports, std::nullopt);
+  EXPECT_EQ(reports->empty(), true);
+}
+
+TEST_F(StatusListFromJsonStringTest, MalformedOrMismatchedAgentReportListShouldReturnNullopt)
+{
+  using namespace pendarlab::app::mavlink_hub;
+
+  // Not valid JSON.
+  EXPECT_EQ(json_utils::agentReportListFromJsonString("not json"), std::nullopt);
+
+  // Missing the expected container key.
+  EXPECT_EQ(json_utils::agentReportListFromJsonString("{ \"other\": [] }"), std::nullopt);
+
+  // The value under the key is not an array.
+  EXPECT_EQ(json_utils::agentReportListFromJsonString("{ \"agent_report_list\": {} }"), std::nullopt);
+
+  // An entry missing its report field, or whose report is not a string.
+  EXPECT_EQ(json_utils::agentReportListFromJsonString("{ \"agent_report_list\": [ { \"name\": \"a\" } ] }"), std::nullopt);
+  EXPECT_EQ(json_utils::agentReportListFromJsonString("{ \"agent_report_list\": [ { \"name\": \"a\", \"report\": 42 } ] }"), std::nullopt);
+}
+
 int main(int argc, char* argv[])
 {
   testing::InitGoogleTest(&argc, argv);

@@ -220,16 +220,18 @@ namespace pendarlab::app::mavlink_hub
 
     // Render one column: a bold, centered header with a horizontal separator under
     // it, then one body cell per data value. Body cells are left-aligned by default;
-    // pass dim_bodies to render them dimmed (used for the "(empty)" marker row).
+    // pass dim_bodies (evaluated fresh each render) to render them dimmed (used for
+    // the "(empty)" marker row).
     auto make_col = [](const std::string& header, std::function<std::vector<std::string>()> body,
-                       bool dim_bodies = false) -> Component {
-      return Renderer([header, body = std::move(body), dim_bodies] {
+                       std::function<bool()> dim_bodies = [] { return false; }) -> Component {
+      return Renderer([header, body = std::move(body), dim_bodies = std::move(dim_bodies)] {
+        const bool dimmed = dim_bodies();
         Elements el;
         el.push_back(text(header) | bold | center);
         el.push_back(separator());
         for (const std::string& v : body()) {
           Element t = text(v);
-          if (dim_bodies) {
+          if (dimmed) {
             t = std::move(t) | dim;
           }
           el.push_back(std::move(t));
@@ -238,30 +240,42 @@ namespace pendarlab::app::mavlink_hub
       });
     };
 
-    // Body cells for one column of a table. When the list is empty the first column
+    // Body cells for one column of a table. `rows()` is a snapshot-fetcher: it pulls
+    // a fresh copy of the current rows (via the controller's thread-safe accessors)
+    // each time it is called, inside the render lambda, so a live periodic report
+    // refresh repopulating the rows is reflected on the next render without holding
+    // a stale reference across threads. When the list is empty the first column
     // (is_marker_col) yields a single dim "(empty)" row and the others yield a blank,
     // so the table reads as intentionally empty.
-    auto col_body = [&](const std::vector<OverviewRow>& rows, const std::string OverviewRow::* field,
+    auto col_body = [&](std::function<std::vector<OverviewRow>()> rows, const std::string OverviewRow::* field,
                         bool is_marker_col) {
+      auto rows_snapshot = rows();
       std::vector<std::string> body;
-      if (rows.empty()) {
+      if (rows_snapshot.empty()) {
         body.push_back(is_marker_col ? std::string("(empty)") : std::string());
       } else {
-        body.reserve(rows.size());
-        for (const auto& row : rows) {
+        body.reserve(rows_snapshot.size());
+        for (const auto& row : rows_snapshot) {
           body.push_back(row.*field);
         }
       }
       return body;
     };
 
-    const std::vector<OverviewRow>& agent_rows = controller.agentRows();
-    const bool agent_empty = agent_rows.empty();
-    // Agent List table columns: Name | Type | Status | Report.
-    Component agent_name_col   = make_col("Name",   [&] { return col_body(agent_rows, &OverviewRow::name,   true); }, agent_empty);
-    Component agent_type_col   = make_col("Type",   [&] { return col_body(agent_rows, &OverviewRow::type,   false); }, agent_empty);
-    Component agent_status_col = make_col("Status", [&] { return col_body(agent_rows, &OverviewRow::status, false); }, agent_empty);
-    Component agent_report_col = make_col("Report", [&] { return col_body(agent_rows, &OverviewRow::report, false); }, agent_empty);
+    // Agent List table columns: Name | Type | Status | Report. Each render fetches a
+    // fresh snapshot so the rows reflect the latest periodic refresh.
+    Component agent_name_col   = make_col("Name",
+        [&] { return col_body([&] { return controller.agentRows(); }, &OverviewRow::name,   true);  },
+        [&] { return controller.agentRows().empty(); });
+    Component agent_type_col   = make_col("Type",
+        [&] { return col_body([&] { return controller.agentRows(); }, &OverviewRow::type,   false); },
+        [&] { return controller.agentRows().empty(); });
+    Component agent_status_col = make_col("Status",
+        [&] { return col_body([&] { return controller.agentRows(); }, &OverviewRow::status, false); },
+        [&] { return controller.agentRows().empty(); });
+    Component agent_report_col = make_col("Report",
+        [&] { return col_body([&] { return controller.agentRows(); }, &OverviewRow::report, false); },
+        [&] { return controller.agentRows().empty(); });
     Component agent_split = ResizableSplitLeft(
         ResizableSplitLeft(
             ResizableSplitLeft(
@@ -273,12 +287,16 @@ namespace pendarlab::app::mavlink_hub
         agent_report_col,
         &agent_name_type_status_w);
 
-    const std::vector<OverviewRow>& endpoint_rows = controller.endpointRows();
-    const bool endpoint_empty = endpoint_rows.empty();
     // Endpoint List table columns: Name | Type | Status (Name fills the rest).
-    Component ep_name_col   = make_col("Name",   [&] { return col_body(endpoint_rows, &OverviewRow::name,   true); }, endpoint_empty);
-    Component ep_type_col   = make_col("Type",   [&] { return col_body(endpoint_rows, &OverviewRow::type,   false); }, endpoint_empty);
-    Component ep_status_col = make_col("Status", [&] { return col_body(endpoint_rows, &OverviewRow::status, false); }, endpoint_empty);
+    Component ep_name_col   = make_col("Name",
+        [&] { return col_body([&] { return controller.endpointRows(); }, &OverviewRow::name,   true);  },
+        [&] { return controller.endpointRows().empty(); });
+    Component ep_type_col   = make_col("Type",
+        [&] { return col_body([&] { return controller.endpointRows(); }, &OverviewRow::type,   false); },
+        [&] { return controller.endpointRows().empty(); });
+    Component ep_status_col = make_col("Status",
+        [&] { return col_body([&] { return controller.endpointRows(); }, &OverviewRow::status, false); },
+        [&] { return controller.endpointRows().empty(); });
     Component endpoint_split = ResizableSplitRight(
         ResizableSplitRight(ep_status_col, ep_type_col, &ep_status_w),
         ep_name_col,
@@ -299,21 +317,71 @@ namespace pendarlab::app::mavlink_hub
     // has a fixed width and the endpoint pane fills the rest.
     Component overview_split = ResizableSplitLeft(agent_pane, endpoint_pane, &overview_agent_width);
 
-    // The overview splits are interactive children of the layout so their
-    // separators receive mouse (drag) events, while rendering stays in the custom
-    // vbox layout below.
-    Component layout = Renderer(Container::Vertical({ command_pane, overview_split }), [&] {
-      // clang-format off
-      return vbox({
-                 text("Mavlink Hub UI") | bold | center | border,
-                 hbox({ command_pane->Render() | border, command_result_pane->Render() | flex | border }) | flex,
-                 overview_split->Render(),
-                 text("Application Status: " + app_status) | border | notflex,
-             }) | border;
-      // clang-format on
-    });
+    // ------------------------------------------------------------------
+    // Report Refresh Period control (third row):
+    //   "Report Refresh Period: - <value> ms +"
+    // A worker thread in the controller re-queries agent reports at this
+    // cadence; the '-' / '+' buttons step it by 100 ms within
+    // [100, 5000] ms. A button is rendered dimmed (and its controller step is a
+    // no-op) when the period is already at that bound, so no further single-step
+    // change is possible in that direction.
+    // ------------------------------------------------------------------
+    // A bare -/+ button: renders just the single-character label (no brackets,
+    // matching the spec "Report Refresh Period: - <value> ms +"), inverted when
+    // focused, dimmed when the period is already at that bound.
+    auto make_period_button_options = [&](std::function<bool()> at_bound) {
+      ButtonOption opts;
+      opts.transform = [at_bound = std::move(at_bound)](EntryState state) {
+        Element e = text(state.label);
+        if (state.focused) {
+          e = inverted(e);
+        } else if (at_bound()) {
+          e = std::move(e) | dim;
+        }
+        return e;
+      };
+      return opts;
+    };
+    Component decrease_period_button = Button(
+        "-", [this] { controller.decreaseReportRefreshPeriod(); },
+        make_period_button_options([this] { return controller.reportRefreshPeriodAtMin(); }));
+    Component increase_period_button = Button(
+        "+", [this] { controller.increaseReportRefreshPeriod(); },
+        make_period_button_options([this] { return controller.reportRefreshPeriodAtMax(); }));
+    Component report_period_controls = Container::Horizontal({ decrease_period_button, increase_period_button });
 
-    std::vector<Component> tab_boxes{ command_menu, payload_input, action_menu };
+    // The control row renders exactly "Report Refresh Period: - <value> ms +",
+    // re-reading the current period value from the controller each frame so button
+    // presses are reflected immediately.
+    Component report_refresh_period_row = Renderer(
+        report_period_controls,
+        [this, decrease_period_button, increase_period_button] {
+          return hbox({
+              text("Report Refresh Period: "),
+              decrease_period_button->Render(),
+              hbox(text(" "), text(std::to_string(controller.reportRefreshPeriod()) + " ms") | center, text(" ")),
+              increase_period_button->Render(),
+          }) | notflex;
+        });
+
+    // The overview splits and the period-control buttons are interactive children
+    // of the layout so their separators/buttons receive mouse (drag/click) events,
+    // while rendering stays in the custom vbox layout below.
+    Component layout = Renderer(
+        Container::Vertical({ command_pane, report_period_controls, overview_split }),
+        [&] {
+          // clang-format off
+          return vbox({
+                     text("Mavlink Hub UI") | bold | center | border,
+                     hbox({ command_pane->Render() | border, command_result_pane->Render() | flex | border }) | flex,
+                     report_refresh_period_row->Render() | border,
+                     overview_split->Render(),
+                     text("Application Status: " + app_status) | border | notflex,
+                 }) | border;
+          // clang-format on
+        });
+
+    std::vector<Component> tab_boxes{ command_menu, payload_input, action_menu, report_period_controls };
 
     auto focus_next_box = [&](int direction) {
       int focused_index = -1;
@@ -373,7 +441,8 @@ namespace pendarlab::app::mavlink_hub
 
     // When a command finishes on the worker thread, ask the UI loop to
     // redraw so the result/status pane reflects the new state without
-    // requiring any user input.
+    // requiring any user input. The same callback is triggered by the
+    // periodic report-refresh worker after it repopulates the overview rows.
     d->controller.setOnUpdate([] {
       if (ftxui::App::Active() != nullptr) {
         ftxui::App::Active()->Post([] {
@@ -383,6 +452,12 @@ namespace pendarlab::app::mavlink_hub
         });
       }
     });
+
+    // Kick off the live periodic report refresh: a worker thread inside the
+    // controller re-queries agents' reports and repopulates the overview rows at
+    // the current refresh period (adjustable via the '-' / '+' buttons). It stops
+    // when the UI stops.
+    d->controller.startPeriodicRefresh();
 
     // Wrap the UI-generating function in a CliRoutine so that, when the UI
     // thread exits (user quits) or ends abnormally (exception), shutdown is
@@ -399,6 +474,10 @@ namespace pendarlab::app::mavlink_hub
     if (!d->running) {
       return;
     }
+
+    // Stop the periodic report refresh worker before tearing down the UI so it
+    // does not keep re-querying after the view is gone.
+    d->controller.stopPeriodicRefresh();
 
     if (d->controller.executing()) {
       std::string waiting_for = "a command";
