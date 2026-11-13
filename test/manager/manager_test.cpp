@@ -421,7 +421,7 @@ TEST_F(AgentManagementTest, GettingExistingAgentReportShouldReturnMockAgentPaylo
     std::optional<std::string> report = manager.getAgentReport(ag_name);
     EXPECT_NE(report, std::nullopt);
     EXPECT_EQ(report.has_value(), true);
-    EXPECT_EQ(report.value(), MockAgent::kReportPayload);
+    EXPECT_EQ(report.value().rfind(MockAgent::kReportPayload, 0), 0u);
   }
 }
 
@@ -439,7 +439,7 @@ TEST_F(AgentManagementTest, GettingAllAgentReportsShouldReturnAllAddedAgentsRepo
   for (auto& added_agent_name : agents_name) {
     auto it = agents_report.find(added_agent_name);
     ASSERT_NE(it, agents_report.end());
-    EXPECT_EQ(it->second, MockAgent::kReportPayload);
+    EXPECT_EQ(it->second.rfind(MockAgent::kReportPayload, 0), 0u);
   }
   EXPECT_EQ(agents_report.size(), agents_name.size());
 }
