@@ -527,6 +527,7 @@ target_link_libraries(MavlinkHubJsonUtilsTest
 )
 target_compile_definitions(MavlinkHubJsonUtilsTest
   PRIVATE TEST_PLAN_DIR="${CMAKE_CURRENT_SOURCE_DIR}/test/app/common/json_utils/"
+  PRIVATE RESOURCES_EXAMPLES_DIR="${CMAKE_CURRENT_SOURCE_DIR}/resources/examples/"
 )
 
 ##############################################################################
