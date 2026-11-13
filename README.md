@@ -62,6 +62,53 @@ The `mavlink_hub` main executable is built from the `mavlink_hub` target in `CMa
 
   Note: many `AppService::executeCommand` cases are currently stubs, so not every listed command is fully implemented yet (see `docs/ARCHITECTURE.md` §7).
 
+### Running with the example config
+
+`mavlink_hub` ships self-contained examples in `resources/examples/` that use
+only the in-repo mock plugins built for the tests (`MavlinkHubMockAgent` and
+`MavlinkHubMockByteTransport`), so no external plugin libraries are needed:
+
+- `resources/examples/app_config_example.json` — startup config that loads the
+  two mock plugins and applies a user plan on startup.
+- `resources/examples/user_plan_best_effort.json` and
+  `resources/examples/user_plan_discard.json` — user plans declaring one
+  endpoint (`mock_byte_transport`) and one agent (`mock_agent`).
+
+To run the hub with them:
+
+1. **Build** (see [Quick start (build)](#quick-start-build) above), producing
+   the mock plugin libraries `build/libMavlinkHubMockAgent.so` and
+   `build/libMavlinkHubMockByteTransport.so`.
+
+2. **Resolve the mock library paths.** `app_config_example.json` references the
+   mock libraries relative to the repo root (e.g. `build/libMavlinkHubMockAgent.so`).
+   If you build into a different directory (or run from a different working
+   directory), update the `path` values to point at your build tree — e.g. via
+   CMake's `$<TARGET_FILE:MavlinkHubMockAgent>` generator expression. See
+   [`resources/examples/README.md`](resources/examples/README.md) for details.
+
+3. **Run the hub with the config** (from the repository root, so the relative
+   paths in the example resolve):
+
+   ```bash
+   ./build/mavlink_hub -c resources/examples/app_config_example.json
+   ```
+
+   `app_config_example.json` has `apply_user_plan_on_startup: true`, so the
+   hub loads `resources/examples/user_plan_best_effort.json` and applies it at
+   startup (bringing up the `mock_byte_transport` endpoint and `mock_agent`
+   agent). To just load the plan without applying it, set
+   `apply_user_plan_on_startup` to `false`.
+
+   You can also point `path_to_startup_user_plan` at either user plan file —
+   both declare the same system, differing only in their `policy`
+   (`best_effort` vs. `discard`).
+
+Both mock plugins require a single config key, `a_required_string` (any string
+value), which the example user plans already provide. See the
+[examples README](resources/examples/README.md) for the full plugin/config
+reference.
+
 ## Repository status
 
 The project is mid-development. Notable gaps (detailed in `docs/ARCHITECTURE.md` §7):

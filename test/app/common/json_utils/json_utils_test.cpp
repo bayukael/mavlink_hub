@@ -376,6 +376,80 @@ TEST_F(JsonUtilsConvertToUserPlanTest, PlanWithNonBoolStartOnCreateIsSkippedUnde
   EXPECT_EQ(parsed_plan.value().agent_list.size(), 0);
 }
 
+// The shipped examples in resources/examples/ must parse without error using the
+// in-repo mock plugins (mock_agent / mock_byte_transport). These tests run the real
+// parsers against the actual example files so a change that breaks them fails CI.
+class ExamplesParseTest : public testing::Test
+{
+protected:
+  std::string examples_dir;
+  void SetUp() override
+  {
+    examples_dir = RESOURCES_EXAMPLES_DIR;
+  }
+  void TearDown() override {}
+};
+
+TEST_F(ExamplesParseTest, AppConfigExampleShouldParseWithoutError)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  std::string file_path = examples_dir + "app_config_example.json";
+
+  std::ifstream file_stream(file_path);
+  ASSERT_EQ(file_stream.is_open(), true);
+
+  std::optional<AppConfig> parsed_cfg = json_utils::fstreamToAppConfig(file_stream);
+  ASSERT_EQ(parsed_cfg.has_value(), true);
+  auto& app_cfg = parsed_cfg.value();
+
+  // The example wires the in-repo mock plugins by their test registration names
+  // and exported symbols, with no external gz_agent / serial_byte_transport refs.
+  ASSERT_EQ(app_cfg.agent_lib_list.count("mock_agent"), 1u);
+  EXPECT_EQ(app_cfg.agent_lib_list["mock_agent"].sym, "getMockAgentDefinition");
+  ASSERT_EQ(app_cfg.transport_lib_list.count("mock_byte_transport"), 1u);
+  EXPECT_EQ(app_cfg.transport_lib_list["mock_byte_transport"].sym, "getMockTransportDefinition");
+}
+
+TEST_F(ExamplesParseTest, UserPlanBestEffortExampleShouldParseWithoutError)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  std::string file_path = examples_dir + "user_plan_best_effort.json";
+
+  std::ifstream file_stream(file_path);
+  ASSERT_EQ(file_stream.is_open(), true);
+
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
+  ASSERT_EQ(parsed_plan.has_value(), true);
+  auto& user_plan = parsed_plan.value();
+
+  ASSERT_EQ(user_plan.endpoint_list.size(), 1u);
+  EXPECT_EQ(user_plan.endpoint_list["pixhawk_serial"].type, "mock_byte_transport");
+  EXPECT_EQ(user_plan.endpoint_list["pixhawk_serial"].config.count("a_required_string"), 1u);
+  ASSERT_EQ(user_plan.agent_list.size(), 1u);
+  EXPECT_EQ(user_plan.agent_list["gz_bridge_iris"].type, "mock_agent");
+  EXPECT_EQ(user_plan.agent_list["gz_bridge_iris"].config.count("a_required_string"), 1u);
+}
+
+TEST_F(ExamplesParseTest, UserPlanDiscardExampleShouldParseWithoutError)
+{
+  using namespace pendarlab::app::mavlink_hub;
+  std::string file_path = examples_dir + "user_plan_discard.json";
+
+  std::ifstream file_stream(file_path);
+  ASSERT_EQ(file_stream.is_open(), true);
+
+  std::optional<UserPlan> parsed_plan = json_utils::fstreamToUserPlan(file_stream);
+  ASSERT_EQ(parsed_plan.has_value(), true);
+  auto& user_plan = parsed_plan.value();
+
+  ASSERT_EQ(user_plan.endpoint_list.size(), 1u);
+  EXPECT_EQ(user_plan.endpoint_list["pixhawk_serial"].type, "mock_byte_transport");
+  EXPECT_EQ(user_plan.endpoint_list["pixhawk_serial"].config.count("a_required_string"), 1u);
+  ASSERT_EQ(user_plan.agent_list.size(), 1u);
+  EXPECT_EQ(user_plan.agent_list["gz_bridge_iris"].type, "mock_agent");
+  EXPECT_EQ(user_plan.agent_list["gz_bridge_iris"].config.count("a_required_string"), 1u);
+}
+
 class ExecutionResultListToJsonStringTest : public testing::Test
 {
 protected:
