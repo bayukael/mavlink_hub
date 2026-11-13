@@ -8,6 +8,7 @@
 #include "byte_transport/RegistryUserAccess.h"
 #include "gtest/gtest.h"
 #include "manager/Manager.h"
+#include "mock_agent/MockAgent.h"
 #include "mock_agent/MockAgentDefinition.h"
 #include "mock_byte_transport/MockByteTransportDefinition.h"
 #include "mock_lib_loader/MockLibLoader.h"
@@ -99,13 +100,14 @@ TEST_F(CliUiControllerPlanTest, OverviewReflectsAgentsAndEndpointsFromStartupLoa
 
   // Agents created by the plan are IDLE; their row shows the lowercase status
   // and empty type, and the report is surfaced from the agent's report() (the
-  // MockAgent overrides report() with kReportPayload = "MockAgent Report").
+  // MockAgent overrides report() by appending an incrementing counter to
+  // kReportPayload, so only the fixed prefix is asserted).
   ASSERT_EQ(controller.agentRows().size(), 2u);
   EXPECT_EQ(find_status(controller.agentRows(), "ag_iris"), "idle");
   EXPECT_EQ(find_status(controller.agentRows(), "ag_heartbeat"), "idle");
   for (const auto& row : controller.agentRows()) {
     EXPECT_EQ(row.type, "");
-    EXPECT_EQ(row.report, "MockAgent Report");
+    EXPECT_EQ(row.report.rfind(test::MockAgent::kReportPayload, 0), 0u);
   }
 
   // Endpoints created by the plan are DISCONNECTED (connect_on_create=false).

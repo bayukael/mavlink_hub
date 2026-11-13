@@ -413,6 +413,21 @@ target_link_libraries(MavlinkHubMockAgent
 )
 
 ##############################################################################
+########################     MockAgent Test    ###############################
+##############################################################################
+add_executable(MavlinkHubMockAgentTest
+  test/mock_agent/mock_agent_test.cpp
+)
+target_include_directories(MavlinkHubMockAgentTest PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/test>
+)
+target_link_libraries(MavlinkHubMockAgentTest
+  PRIVATE MavlinkHubMockAgent
+  PRIVATE pendarlab::MavlinkHubSdk
+  PRIVATE gtest
+)
+
+##############################################################################
 #########################     MockByteTransport    ###########################
 ##############################################################################
 add_library(MavlinkHubMockByteTransport SHARED
